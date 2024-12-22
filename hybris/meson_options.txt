@@ -1,0 +1,114 @@
+# Enable or disable GLVND support
+option('glvnd',
+  type    : 'boolean',
+  value   : false,
+  description : 'Enable GLVND support (equivalent to WANT_GLVND).'
+)
+
+# Enable or disable MESA
+option('mesa',
+  type    : 'boolean',
+  value   : false,
+  description : 'Enable MESA headers (equivalent to WANT_MESA).'
+)
+
+# Enable or disable debug build
+option('enable_debug',
+  type    : 'boolean',
+  value   : false,
+  description : 'Enable debug build (equivalent to WANT_DEBUG).'
+)
+
+# Enable or disable trace
+option('trace',
+  type    : 'boolean',
+  value   : false,
+  description : 'Enable trace statements (equivalent to WANT_TRACE).'
+)
+
+# String option to replicate the GL_LIB_SUFFIX from Autotools.  Defaults to ""
+option('gl_lib_suffix',
+  type    : 'string',
+  value   : '',
+  description : 'Suffix for GL-related libraries (e.g. "_libhybris").'
+)
+
+# Sometimes we want to inject custom CFLAGS for the Android headers:
+option('android_headers_cflags',
+  type    : 'string',
+  value   : '',
+  description : 'Extra cflags for Android headers (e.g. -I/path/to/android-headers).'
+)
+
+# common
+
+option('arch_arm64',
+  type : 'boolean',
+  value : false,
+  description : 'Build for ARM64 (WANT_ARCH_ARM64)?')
+
+option('arch_x86_64',
+  type : 'boolean',
+  value : false,
+  description : 'Build for x86_64 (WANT_ARCH_X86_64)?')
+
+option('android_6_0_0',
+  type : 'boolean',
+  value : false,
+  description : 'HAS_ANDROID_6_0_0?')
+
+option('android_7_0_0',
+  type : 'boolean',
+  value : false,
+  description : 'HAS_ANDROID_7_0_0?')
+
+option('android_8_0_0',
+  type : 'boolean',
+  value : false,
+  description : 'HAS_ANDROID_8_0_0?')
+
+option('android_10_0_0',
+  type : 'boolean',
+  value : false,
+  description : 'HAS_ANDROID_10_0_0?')
+
+option('runtime_property_cache',
+  type : 'boolean',
+  value : false,
+  description : 'Enable runtime property cache (WANT_RUNTIME_PROPERTY_CACHE)?')
+
+option('arm_tracing',
+  type : 'boolean',
+  value : false,
+  description : 'Enable ARM tracing (WANT_ARM_TRACING)?')
+
+option('adreno_quirks',
+  type : 'boolean',
+  value : false,
+  description : 'Enable adreno quirks (WANT_ADRENO_QUIRKS)?')
+
+option('mali_quirks',
+  type : 'boolean',
+  value : false,
+  description : 'Enable MALI quirks (WANT_MALI_QUIRKS)?')
+
+option('ubuntu_linker_overrides',
+  type : 'boolean',
+  value : false,
+  description : 'Enable Ubuntu linker overrides (WANT_UBUNTU_LINKER_OVERRIDES)?')
+
+# For replicating libtool's -version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)
+option('lt_current',
+  type : 'integer',
+  value : 1,
+  description : 'Libtool CURRENT for version-info')
+
+option('lt_revision',
+  type : 'integer',
+  value : 0,
+  description : 'Libtool REVISION for version-info')
+
+option('lt_age',
+  type : 'integer',
+  value : 0,
+  description : 'Libtool AGE for version-info')
