@@ -99,6 +99,5 @@ libhybris_common_la_LDFLAGS = \
 	-lrt \
 	-pthread \
 	-lc \
-	-lstdc++ \
 	-lpthread \
 	-version-info "$(LT_CURRENT)":"$(LT_REVISION)":"$(LT_AGE)"

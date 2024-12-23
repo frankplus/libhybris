@@ -34,6 +34,8 @@
 #include <dlfcn.h>
 #include <algorithm>
 
+#include "hybris_compat.h"
+
 bool android_namespace_t::is_accessible(const std::string& file) {
   if (!is_isolated_) {
     return true;

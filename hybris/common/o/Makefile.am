@@ -55,7 +55,6 @@ o_la_CPPFLAGS += -DHAS_ANDROID_9_0_0
 endif
 
 o_la_LDFLAGS = \
-	-lsupc++ \
 	-module \
 	-avoid-version
 

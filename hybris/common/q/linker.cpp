@@ -26,6 +26,8 @@
  * SUCH DAMAGE.
  */
 
+#include "hybris_compat.h"
+
 #include <android/api-level.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -1199,7 +1201,7 @@ int open_executable(const char* path, off64_t* file_offset, std::string* realpat
   return open_library_at_path(&zip_archive_cache, path, file_offset, realpath);
 }
 
-const char* fix_dt_needed(const char* dt_needed, const char* sopath __unused) {
+const char* fix_dt_needed(const char* dt_needed, const char* sopath __UNUSED) {
 #if !defined(__LP64__)
   // Work around incorrect DT_NEEDED entries for old apps: http://b/21364029
   int app_target_api_level = get_application_target_sdk_version();
@@ -1466,7 +1468,9 @@ static bool load_library(android_namespace_t* ns,
   // Open the file.
   int fd = open_library(ns, zip_archive_cache, name, needed_by, &file_offset, &realpath);
   if (fd == -1) {
-    DL_ERR("library \"%s\" not found", name);
+    const char *env = getenv("HYBRIS_LD_DEBUG");
+    if (env != NULL)
+      DL_ERR("library \"%s\" not found", name);
     return false;
   }
 
@@ -2873,7 +2877,7 @@ bool soinfo::relocate_relr() {
 
 #if !defined(__mips__)
 #if defined(USE_RELA)
-static ElfW(Addr) get_addend(ElfW(Rela)* rela, ElfW(Addr) reloc_addr __unused) {
+static ElfW(Addr) get_addend(ElfW(Rela)* rela, ElfW(Addr) reloc_addr __UNUSED) {
   return rela->r_addend;
 }
 #else

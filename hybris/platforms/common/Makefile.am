@@ -19,7 +19,7 @@ BUILT_SOURCES = wayland-android-protocol.c \
 		wayland-android-server-protocol.h
 
 %-protocol.c : %.xml
-	$(AM_V_GEN)$(WAYLAND_SCANNER) code < $< > $@
+	$(AM_V_GEN)$(WAYLAND_SCANNER) private-code < $< > $@
 
 %-server-protocol.h : %.xml
 	$(AM_V_GEN)$(WAYLAND_SCANNER) server-header < $< > $@

@@ -35,9 +35,6 @@
 
 typedef int sig_atomic_t;
 
-typedef __sighandler_t sig_t; /* BSD compatibility. */
-typedef __sighandler_t sighandler_t; /* glibc compatibility. */
-
 #if defined(__LP64__) || defined(__mips__)
 typedef sigset_t sigset64_t;
 #else

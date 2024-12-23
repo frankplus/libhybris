@@ -381,9 +381,9 @@ ElfW(Sym)* soinfo::elf_addr_lookup(const void* addr) {
   return nullptr;
 }
 
-static void call_function(const char* function_name __unused,
+static void call_function(const char* function_name __UNUSED,
                           linker_ctor_function_t function,
-                          const char* realpath __unused) {
+                          const char* realpath __UNUSED) {
   if (function == nullptr || reinterpret_cast<uintptr_t>(function) == static_cast<uintptr_t>(-1)) {
     return;
   }
@@ -393,9 +393,9 @@ static void call_function(const char* function_name __unused,
   TRACE("[ Done calling c-tor %s @ %p for '%s' ]", function_name, function, realpath);
 }
 
-static void call_function(const char* function_name __unused,
+static void call_function(const char* function_name __UNUSED,
                           linker_dtor_function_t function,
-                          const char* realpath __unused) {
+                          const char* realpath __UNUSED) {
   if (function == nullptr || reinterpret_cast<uintptr_t>(function) == static_cast<uintptr_t>(-1)) {
     return;
   }
@@ -406,7 +406,7 @@ static void call_function(const char* function_name __unused,
 }
 
 template <typename F>
-static void call_array(const char* array_name __unused,
+static void call_array(const char* array_name __UNUSED,
                        F* functions,
                        size_t count,
                        bool reverse,
