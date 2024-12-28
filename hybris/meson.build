@@ -8,5 +8,7 @@ project(
   ]
 )
 
+add_project_arguments('-D_GNU_SOURCE', language: 'c')
+
 subdir('common')
 subdir('glesv1')
