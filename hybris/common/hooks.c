@@ -3266,8 +3266,8 @@ static struct _hook hooks_mm[] = {
     HOOK_DIRECT(malloc_usable_size),
     HOOK_DIRECT(posix_memalign),
     HOOK_DIRECT(mprotect),
-    HOOK_TO(__gnu_strerror_r, _hybris_hook__gnu_strerror_r),
 #ifdef __GLIBC__
+    HOOK_TO(__gnu_strerror_r, _hybris_hook__gnu_strerror_r),
     HOOK_INDIRECT(pthread_rwlockattr_getkind_np),
     HOOK_INDIRECT(pthread_rwlockattr_setkind_np),
 #endif
