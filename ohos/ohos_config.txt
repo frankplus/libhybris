@@ -1,0 +1,30 @@
+# OpenHarmony-specific meson options for libhybris
+# This file can be used with: meson setup build --cross-file=cross_file_ohos @ohos_config.txt
+
+# Architecture - typically arm64 for most OpenHarmony devices
+-Darch=arm64
+
+# Disable features not typically available on OpenHarmony
+-Dwayland=false
+-Dubuntu_camera_headers=false
+-Dubuntu_linker_overrides=false
+-Dglvnd=false
+
+# Enable features useful for OpenHarmony
+-Dproperty_cache=true
+-Denable_debug=false
+-Denable_trace=false
+-Dadreno_quirks=false
+
+# Default EGL platform for OpenHarmony
+-Ddefault_egl_platform=hwcomposer
+
+# Build type
+--buildtype=release
+
+# Installation directories
+--libdir=lib
+--includedir=include
+
+# Cross-compilation
+--cross-file=cross_file_ohos
