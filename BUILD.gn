@@ -39,13 +39,13 @@ declare_args() {
   
   # Default EGL platform
   hybris_default_egl_platform = "null"
-  
-  # Default library paths for Android libraries
-  if (hybris_arch == "arm" || hybris_arch == "x86") {
-    hybris_default_ld_library_path = "/vendor/lib:/system/lib:/odm/lib"
-  } else {
-    hybris_default_ld_library_path = "/vendor/lib64:/system/lib64:/odm/lib64"
-  }
+}
+
+# Default library paths for Android libraries
+if (hybris_arch == "arm" || hybris_arch == "x86") {
+  hybris_default_ld_library_path = "/vendor/lib:/system/lib:/odm/lib"
+} else {
+  hybris_default_ld_library_path = "/vendor/lib64:/system/lib64:/odm/lib64"
 }
 
 # Common configuration for all libhybris components
@@ -166,7 +166,7 @@ config("libhybris_config") {
 ohos_shared_library("libhybris-common") {
   sources = [
     "hybris/common/hooks.c",
-    "hybris/common/hooks_shm.c", 
+    "hybris/common/hooks_shm.c",
     "hybris/common/strlcpy.c",
     "hybris/common/strlcat.c",
     "hybris/common/logging.c",
@@ -176,7 +176,7 @@ ohos_shared_library("libhybris-common") {
     "hybris/common/legacy_properties/properties.c",
     "hybris/common/legacy_properties/cache.c",
   ]
-  
+
   if (hybris_enable_property_cache) {
     sources += [ "hybris/common/legacy_properties/runtime_cache.c" ]
   }
@@ -201,25 +201,31 @@ ohos_shared_library("libhybris-common") {
   
   if (android_version_major >= 6) {
     sources += [
-      "hybris/common/mm/dlfcn.c",
+      "hybris/common/mm/hybris_compat.cpp",
+      "hybris/common/mm/dlfcn.cpp",
       "hybris/common/mm/linker.cpp",
       "hybris/common/mm/linker_allocator.cpp",
       "hybris/common/mm/linker_block_allocator.cpp",
       "hybris/common/mm/linker_memory.cpp",
       "hybris/common/mm/linker_phdr.cpp",
-      "hybris/common/mm/linker_utils.cpp",
+      "hybris/common/mm/linker_sdk_versions.cpp",
       "hybris/common/mm/rt.cpp",
     ]
   }
   
   if (android_version_major >= 7) {
     sources += [
-      "hybris/common/n/dlfcn.c",
+      "hybris/common/n/hybris_compat.cpp",
+      "hybris/common/n/dlfcn.cpp",
       "hybris/common/n/linker.cpp",
       "hybris/common/n/linker_allocator.cpp", 
       "hybris/common/n/linker_block_allocator.cpp",
+      "hybris/common/n/linker_dlwarning.cpp",
+      "hybris/common/n/linker_gdb_support.cpp",
+      "hybris/common/n/linker_mapped_file_fragment.cpp",
       "hybris/common/n/linker_memory.cpp",
       "hybris/common/n/linker_phdr.cpp",
+      "hybris/common/n/linker_sdk_versions.cpp",
       "hybris/common/n/linker_utils.cpp",
       "hybris/common/n/rt.cpp",
     ]
@@ -227,12 +233,24 @@ ohos_shared_library("libhybris-common") {
   
   if (android_version_major >= 8) {
     sources += [
-      "hybris/common/o/dlfcn.c",
+      "hybris/common/o/hybris_compat.cpp",
+      "hybris/common/o/dlfcn.cpp",
       "hybris/common/o/linker.cpp",
       "hybris/common/o/linker_allocator.cpp",
       "hybris/common/o/linker_block_allocator.cpp", 
+      "hybris/common/o/linker_cfi.cpp",
+      "hybris/common/o/linker_config.cpp",
+      "hybris/common/o/linker_dlwarning.cpp",
+      "hybris/common/o/linker_gdb_support.cpp",
+      "hybris/common/o/linker_globals.cpp",
+      "hybris/common/o/linker_logger.cpp",
+      "hybris/common/o/linker_main.cpp",
+      "hybris/common/o/linker_mapped_file_fragment.cpp",
       "hybris/common/o/linker_memory.cpp",
+      "hybris/common/o/linker_namespaces.cpp",
       "hybris/common/o/linker_phdr.cpp",
+      "hybris/common/o/linker_sdk_versions.cpp",
+      "hybris/common/o/linker_soinfo.cpp",
       "hybris/common/o/linker_utils.cpp",
       "hybris/common/o/rt.cpp",
     ]
@@ -240,15 +258,36 @@ ohos_shared_library("libhybris-common") {
   
   if (android_version_major >= 10) {
     sources += [
-      "hybris/common/q/dlfcn.c",
+      "hybris/common/q/hybris_compat.cpp",
+      "hybris/common/q/bionic/libc/bionic/bionic_call_ifunc_resolver.cpp",
+      "hybris/common/q/dlfcn.cpp",
       "hybris/common/q/linker.cpp",
       "hybris/common/q/linker_allocator.cpp",
       "hybris/common/q/linker_block_allocator.cpp",
+      "hybris/common/q/linker_cfi.cpp",
+      "hybris/common/q/linker_config.cpp",
+      "hybris/common/q/linker_dlwarning.cpp",
+      "hybris/common/q/linker_gdb_support.cpp",
+      "hybris/common/q/linker_globals.cpp",
+      "hybris/common/q/linker_logger.cpp",
+      "hybris/common/q/linker_main.cpp",
+      "hybris/common/q/linker_mapped_file_fragment.cpp",
       "hybris/common/q/linker_memory.cpp", 
+      "hybris/common/q/linker_namespaces.cpp",
       "hybris/common/q/linker_phdr.cpp",
+      "hybris/common/q/linker_sdk_versions.cpp",
+      "hybris/common/q/linker_soinfo.cpp",
+      "hybris/common/q/linker_tls.cpp",
       "hybris/common/q/linker_utils.cpp",
       "hybris/common/q/rt.cpp",
+      "hybris/common/q/bionic/libc/bionic/bionic_elf_tls.cpp",
+      "hybris/common/q/bionic/libc/bionic/bionic_allocator.cpp",
     ]
+    
+    # ARM64-specific assembly file
+    if (hybris_arch == "arm64") {
+      sources += [ "hybris/common/q/tlsdesc_resolver.S" ]
+    }
   }
   
   configs = [ ":libhybris_config" ]
@@ -323,7 +362,7 @@ ohos_shared_library("libEGL") {
   deps = [
     ":libhybris-common",
     ":libhybris-eglplatformcommon",
-    ":libhybris-platformscommon",
+    ":libhybris-platformcommon",
   ]
   
   install_images = [
@@ -396,21 +435,22 @@ ohos_static_library("libhybris-eglplatformcommon") {
 }
 
 # Build platforms common library
-ohos_static_library("libhybris-platformscommon") {
+ohos_static_library("libhybris-platformcommon") {
   sources = [
     "hybris/platforms/common/nativewindowbase.cpp",
-    "hybris/platforms/common/platformcommon.cpp", 
+    "hybris/platforms/common/platformcommon.cpp",
     "hybris/platforms/common/windowbuffer.cpp",
   ]
-  
+
   if (hybris_enable_wayland) {
     sources += [
       "hybris/platforms/common/server_wlegl.cpp",
       "hybris/platforms/common/server_wlegl_buffer.cpp",
       "hybris/platforms/common/server_wlegl_handle.cpp",
+      "hybris/platforms/common/wayland-android-protocol.c",
     ]
   }
-  
+
   configs = [ ":libhybris_config" ]
   
   deps = [
@@ -695,6 +735,29 @@ ohos_shared_library("libOpenCL") {
   subsystem_name = "thirdparty"
 }
 
+# Build libVulkan (if Vulkan headers are available)
+ohos_shared_library("libvulkan") {
+  sources = [
+    "hybris/vulkan/vulkan.c",
+    "hybris/vulkan/ws.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+    ":libhardware",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
 # Build libnfc_ndef_nxp
 ohos_shared_library("libnfc_ndef_nxp") {
   sources = [
@@ -774,8 +837,9 @@ group("libhybris") {
     ":libnfc_nxp",
     ":libnfc_ndef_nxp",
     ":libOpenCL",
+    ":libvulkan",
     ":libhybris-eglplatformcommon",
-    ":libhybris-platformscommon",
+    ":libhybris-platformcommon",
     ":libhybris-eglplatform-null",
     ":getprop",
     ":setprop",
