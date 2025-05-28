@@ -31,7 +31,7 @@
 #ifndef __GLIBC__
 const char *gnu_basename(const char *path)
 {
-    char *base = strrchr(path, '/');
+    const char *base = strrchr(path, '/');
     return base ? base + 1 : path;
 }
 #endif
