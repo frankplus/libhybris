@@ -1414,7 +1414,9 @@ static bool load_library(android_namespace_t* ns,
   // Open the file.
   int fd = open_library(ns, zip_archive_cache, name, needed_by, &file_offset, &realpath);
   if (fd == -1) {
-    DL_ERR("library \"%s\" not found", name);
+    const char *env = getenv("HYBRIS_LD_DEBUG");
+    if (env != NULL)
+      DL_ERR("library \"%s\" not found", name);
     return false;
   }
 
