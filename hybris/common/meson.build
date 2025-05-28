@@ -91,10 +91,38 @@ if get_option('arm_tracing')
   libhybris_common_sources += ['wrappers.c', 'wrapper_code_generic_arm.c']
 endif
 
-dl_dep = cc.find_library('dl', required : true)
-rt_dep = cc.find_library('rt', required : true)
+# For musl/OpenHarmony, dl functions are built into libc
+dl_dep = cc.find_library('dl', required : false)
+if not dl_dep.found()
+  # Check if we're cross-compiling for musl/OpenHarmony
+  if meson.is_cross_build() and get_option('arch') == 'arm64'
+    # Assume dl functions are built into libc for OpenHarmony
+    message('Using built-in dl functions for OpenHarmony/musl')
+    dl_dep = dependency('', required : false)  # Empty dependency
+  else
+    dl_dep = cc.find_library('dl', required : true)  # Will fail with helpful error
+  endif
+endif
 
-libhybris_common_deps = [dl_dep, hybris_dep, rt_dep, thread_dep]
+rt_dep = cc.find_library('rt', required : false)
+if not rt_dep.found()
+  # For musl/OpenHarmony, rt functions are built into libc
+  if meson.is_cross_build() and get_option('arch') == 'arm64'
+    # Assume rt functions are built into libc for OpenHarmony
+    message('Using built-in rt functions for OpenHarmony/musl')
+    rt_dep = dependency('', required : false)  # Empty dependency
+  else
+    rt_dep = cc.find_library('rt', required : true)  # Will fail with helpful error
+  endif
+endif
+
+libhybris_common_deps = [hybris_dep, thread_dep]
+if dl_dep.found()
+  libhybris_common_deps += [dl_dep]
+endif
+if rt_dep.found()
+  libhybris_common_deps += [rt_dep]
+endif
 
 libhybris_common = library('hybris-common',
   libhybris_common_sources,

@@ -63,6 +63,7 @@ cross_file_content = '''
 [properties]
 needs_exe_wrapper = true
 
+[built-in options]
 c_args = [
     '--target=aarch64-linux-ohosmusl',
     '--sysroot=sysroot_stub',
@@ -111,7 +112,7 @@ cpp = ['ccache', 'project_stub/prebuilts/clang/ohos/linux-x86_64/llvm/bin/clang+
 c_ld = 'lld'
 cpp_ld = 'lld'
 strip = 'project_stub/prebuilts/clang/ohos/linux-x86_64/llvm/bin/llvm-strip'
-pkgconfig = '/usr/bin/pkg-config'
+pkg-config = '/usr/bin/pkg-config'
 
 [host_machine]
 system = 'linux'
@@ -227,11 +228,6 @@ def process_existing_pkgconfig_templates(hybris_source_dir, project_dir, product
             print(f"Warning: Failed to process template {template_path}: {e}")
     
     print("Processed existing pkg-config templates")
-
-def setup_pkg_config_builtin(install_prefix, version):
-    """Setup pkg-config files for libhybris using built-in templates"""
-    # This function is placeholder - all pkg-config files are now processed from templates
-    print("Using existing pkg-config templates from hybris source")
 
 def prepare_build_environment(project_path, product, android_headers_path, install_prefix, source_dir):
     """Prepare the build environment for OpenHarmony cross-compilation"""
