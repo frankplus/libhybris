@@ -102,4 +102,23 @@ extern "C" size_t strlcat(char *dst, const char *src, size_t size);
 #define DT_AARCH64_PAC_PLT              0x70000003
 #define DT_AARCH64_VARIANT_PCS          0x70000005
 
+#if defined (__aarch64__)
+
+/*#ifndef R_AARCH64_TLS_DTPREL32
+#define R_AARCH64_TLS_DTPREL32 1031
+#endif*/
+
+#ifndef R_AARCH64_IRELATIVE
+#define R_AARCH64_IRELATIVE 1032
+#endif
+
+#endif
+
+#ifndef __GLIBC__
+#ifndef basename
+const char *gnu_basename(const char *path);
+#define basename gnu_basename
+#endif
+#endif
+
 #endif

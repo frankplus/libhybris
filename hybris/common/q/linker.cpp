@@ -26,6 +26,8 @@
  * SUCH DAMAGE.
  */
 
+#include "hybris_compat.h"
+
 #include <android/api-level.h>
 #include <errno.h>
 #include <fcntl.h>
