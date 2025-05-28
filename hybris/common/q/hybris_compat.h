@@ -82,9 +82,16 @@ extern "C" size_t strlcat(char *dst, const char *src, size_t size);
 /*
  * From bionic/libc/include/bits/elf_arm64.h
  */
+// TODO: should these be redefined?!
+#ifndef R_AARCH64_TLS_DTPREL64
 #define R_AARCH64_TLS_DTPREL64          1028    /* Module-relative offset. */
+#endif
+#ifndef R_AARCH64_TLS_DTPMOD64
 #define R_AARCH64_TLS_DTPMOD64          1029    /* Module index. */
+#endif
+//#ifndef R_AARCH64_TLS_TPREL64
 #define R_AARCH64_TLS_TPREL64           1030    /* TP-relative offset. */
+//#endif
 
 /*
  * From bionic/libc/include/bits/elf_arm64.h
