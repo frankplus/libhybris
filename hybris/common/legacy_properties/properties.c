@@ -200,7 +200,7 @@ int my_property_get(const char *key, char *value, const char *default_value)
 		strcpy(value, default_value);
 		return strlen(value);
 	} else {
-		value = '\0';
+		value[0] = '\0';
 	}
 
 	return 0;
