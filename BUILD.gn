@@ -16,7 +16,7 @@ import("//build/ohos.gni")
 # Android version configuration
 declare_args() {
   # Android API level for compatibility
-  android_version_major = 13
+  android_version_major = 11
   android_version_minor = 0
   android_version_patch = 0
   
@@ -50,15 +50,38 @@ if (hybris_arch == "arm" || hybris_arch == "x86") {
 
 # Common configuration for all libhybris components
 config("libhybris_config") {
-  include_dirs = [
+  include_dirs = []
+  
+  # Add version-specific bionic includes first (higher priority) based on Android version
+  if (android_version_major >= 10) {
+    include_dirs += [
+      "hybris/common/q/bionic/libc/include",
+      "hybris/common/q/bionic/libc",
+    ]
+  } else if (android_version_major >= 8) {
+    include_dirs += [
+      "hybris/common/o/bionic/libc/include", 
+      "hybris/common/o/bionic/libc",
+    ]
+  } else if (android_version_major >= 7) {
+    include_dirs += [
+      "hybris/common/n/bionic/libc/include",
+      "hybris/common/n/bionic/libc",
+    ]
+  }
+  
+  # Add standard hybris includes after bionic includes
+  include_dirs += [
     "hybris/include",
     "hybris",
+    "hybris/include/hybris/common",
+    "hybris/common",
+    "hybris/egl",
+    "hybris/platforms/common",
+    "//third_party/android-headers",
   ]
   
   defines = [
-    "ANDROID_VERSION_MAJOR=$android_version_major",
-    "ANDROID_VERSION_MINOR=$android_version_minor", 
-    "ANDROID_VERSION_PATCH=$android_version_patch",
     "DEFAULT_EGL_PLATFORM=\"$hybris_default_egl_platform\"",
     "DEFAULT_HYBRIS_LD_LIBRARY_PATH=\"$hybris_default_ld_library_path\"",
     "HAVE_CONFIG_H",
