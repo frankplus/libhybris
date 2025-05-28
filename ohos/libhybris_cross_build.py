@@ -68,21 +68,13 @@ c_args = [
     '--target=aarch64-linux-ohosmusl',
     '--sysroot=sysroot_stub',
     '-fno-emulated-tls',
-    '-fPIC',
-    '-DANDROID',
-    '-DOHOS_PLATFORM',
-    '-I android_headers_stub',
-    '-Wno-error=deprecated-declarations']
+    '-fPIC']
 
 cpp_args = [
     '--target=aarch64-linux-ohosmusl',
     '--sysroot=sysroot_stub',
     '-fno-emulated-tls',
-    '-fPIC',
-    '-DANDROID',
-    '-DOHOS_PLATFORM',
-    '-I android_headers_stub',
-    '-Wno-error=deprecated-declarations']
+    '-fPIC']
     
 c_link_args = [
     '--target=aarch64-linux-ohosmusl',
