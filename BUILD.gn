@@ -382,6 +382,14 @@ ohos_shared_library("libEGL") {
   
   configs = [ ":libhybris_config" ]
   
+  cflags = [
+    "-DPKGLIBDIR=\"/system/lib/libhybris/\"",
+  ]
+  
+  cflags_cc = [
+    "-DPKGLIBDIR=\"/system/lib/libhybris/\"",
+  ]
+  
   deps = [
     ":libhybris-common",
     ":libhybris-eglplatformcommon",
@@ -745,6 +753,10 @@ ohos_shared_library("libOpenCL") {
   
   configs = [ ":libhybris_config" ]
   
+  cflags = [
+    "-DPKGLIBDIR=\"/system/lib/libhybris/\"",
+  ]
+  
   deps = [
     ":libhybris-common",
   ]
@@ -766,6 +778,14 @@ ohos_shared_library("libvulkan") {
   ]
   
   configs = [ ":libhybris_config" ]
+  
+  cflags = [
+    "-DPKGLIBDIR=\"/system/lib/libhybris/\"",
+  ]
+  
+  cflags_cc = [
+    "-DPKGLIBDIR=\"/system/lib/libhybris/\"",
+  ]
   
   deps = [
     ":libhybris-common",
@@ -848,19 +868,19 @@ group("libhybris") {
     ":libEGL",
     ":libGLESv1_CM",
     ":libGLESv2",
-    ":libcamera",
-    ":libvibrator",
-    ":libmedia",
-    ":libwifi",
-    ":libgralloc",
-    ":libui",
-    ":libis",
-    ":libsf",
-    ":libhwc2",
-    ":libnfc_nxp",
-    ":libnfc_ndef_nxp",
-    ":libOpenCL",
-    ":libvulkan",
+    # ":libcamera",
+    # ":libvibrator",
+    # ":libmedia",
+    # ":libwifi",
+    # ":libgralloc",
+    # ":libui",
+    # ":libis",
+    # ":libsf",
+    # ":libhwc2",
+    # ":libnfc_nxp",
+    # ":libnfc_ndef_nxp",
+    # ":libOpenCL",
+    # ":libvulkan",
     ":libhybris-eglplatformcommon",
     ":libhybris-platformcommon",
     ":libhybris-eglplatform-null",
