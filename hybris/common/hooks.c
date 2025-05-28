@@ -923,6 +923,7 @@ static int _hybris_hook_pthread_cond_destroy(pthread_cond_t *cond)
     }
 
     if (!hybris_is_pointer_in_shm((void*)realcond)) {
+#ifdef __GLIBC__ // FIXME: what to do here for musl? error: no member named '__data' in 'pthread_cond_t'
         /* Bionic and glibc implementations of pthread_cond_destroy are different.
          * Bionic implementation does not block whereas the glibc implementation
          * requires that there are no threads waiting for the condition variable
@@ -930,6 +931,7 @@ static int _hybris_hook_pthread_cond_destroy(pthread_cond_t *cond)
          * requirement. To prevent deadlocks reset the reference count of the
          * condition variable. */
         realcond->__data.__wrefs = 0;
+#endif
         ret = pthread_cond_destroy(realcond);
         free(realcond);
     }
@@ -1608,10 +1610,14 @@ static int _hybris_hook_fgetpos64(FILE *fp, bionic_fpos64_t *pos)
 {
     TRACE_HOOK("fp %p pos %p", fp, pos);
 
+#ifdef __GLIBC__
     fpos64_t my_fpos;
     int ret = fgetpos64(_get_actual_fp(fp), &my_fpos);
 
     *pos = my_fpos.__pos;
+#else
+    int ret = fgetpos(_get_actual_fp(fp), pos);
+#endif
 
     return ret;
 }
@@ -1726,11 +1732,15 @@ static int _hybris_hook_fsetpos64(FILE *fp, const bionic_fpos64_t *pos)
 {
     TRACE_HOOK("fp %p pos %p", fp, pos);
 
+#ifdef __GLIBC__
     fpos64_t my_fpos;
     my_fpos.__pos = *pos;
     memset(&my_fpos.__state, 0, sizeof(mbstate_t));
 
     return fsetpos64(_get_actual_fp(fp), &my_fpos);
+#else
+    return fsetpos(_get_actual_fp(fp), pos);
+#endif
 }
 
 static long _hybris_hook_ftell(FILE *fp)
@@ -3435,11 +3445,11 @@ static struct _hook hooks_n[] = {
     HOOK_DIRECT_NO_DEBUG(fopen64),
     HOOK_INDIRECT(freopen64),
     HOOK_INDIRECT(fileno_unlocked),
-    /* dirent.h */
 #ifdef __GLIBC__
+    /* dirent.h */
     HOOK_INDIRECT(scandirat),
-#endif
     HOOK_TO(scandirat64, _hybris_hook_scandirat),
+#endif
 };
 
 static struct _hook hooks_p[] = {
