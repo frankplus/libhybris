@@ -1,0 +1,85 @@
+{
+    "name": "@ohos/libhybris",
+    "description": "libhybris allows to use bionic-based HW adaptations in glibc systems",
+    "version": "3.0",
+    "license": "Apache-2.0 AND LGPL-2.1",
+    "publishAs": "code-segment",
+    "segment": {
+        "destPath": "third_party/libhybris"
+    },
+    "dirs": {},
+    "scripts": {},
+    "component": {
+        "name": "libhybris",
+        "subsystem": "thirdparty",
+        "syscap": [],
+        "features": [],
+        "adapted_system_type": [],
+        "rom": "",
+        "ram": "",
+        "deps": {
+            "components": [
+                "c_utils"
+            ],
+            "third_party": []
+        },
+        "build": {
+            "sub_component": [
+                "third_party/libhybris:libhybris"
+            ],
+            "inner_kits": [
+                {
+                    "name": "//third_party/libhybris:libhybris-common",
+                    "header": {
+                        "header_files": [
+                            "hybris/include/hybris/common/binding.h",
+                            "hybris/include/hybris/common/dlfcn.h",
+                            "hybris/include/hybris/common/hooks.h",
+                            "hybris/include/hybris/common/logging.h",
+                            "hybris/include/hybris/properties/properties.h"
+                        ],
+                        "header_base": "hybris/include"
+                    }
+                },
+                {
+                    "name": "//third_party/libhybris:libEGL",
+                    "header": {
+                        "header_files": [
+                            "hybris/include/EGL/egl.h",
+                            "hybris/include/EGL/eglext.h",
+                            "hybris/include/EGL/eglplatform.h"
+                        ],
+                        "header_base": "hybris/include"
+                    }
+                },
+                {
+                    "name": "//third_party/libhybris:libGLESv1_CM",
+                    "header": {
+                        "header_files": [
+                            "hybris/include/GLES/gl.h",
+                            "hybris/include/GLES/glext.h",
+                            "hybris/include/GLES/glplatform.h"
+                        ],
+                        "header_base": "hybris/include"
+                    }
+                },
+                {
+                    "name": "//third_party/libhybris:libGLESv2",
+                    "header": {
+                        "header_files": [
+                            "hybris/include/GLES2/gl2.h",
+                            "hybris/include/GLES2/gl2ext.h",
+                            "hybris/include/GLES2/gl2platform.h",
+                            "hybris/include/GLES3/gl3.h",
+                            "hybris/include/GLES3/gl31.h",
+                            "hybris/include/GLES3/gl32.h",
+                            "hybris/include/GLES3/gl3platform.h"
+                        ],
+                        "header_base": "hybris/include"
+                    }
+                }
+            ],
+            "test": []
+        }
+    }
+}

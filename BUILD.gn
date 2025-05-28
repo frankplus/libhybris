@@ -1,0 +1,787 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+
+# Android version configuration
+declare_args() {
+  # Android API level for compatibility
+  android_version_major = 13
+  android_version_minor = 0
+  android_version_patch = 0
+  
+  # Build configuration options
+  hybris_enable_debug = false
+  hybris_enable_trace = false
+  hybris_enable_experimental = false
+  hybris_enable_adreno_quirks = false
+  hybris_enable_mali_quirks = false
+  hybris_enable_arm_tracing = false
+  hybris_enable_mesa = false
+  hybris_enable_wayland = false
+  hybris_enable_glvnd = false
+  hybris_enable_property_cache = false
+  hybris_enable_ubuntu_linker_overrides = false
+  hybris_enable_stub_linker = false
+  
+  # Architecture selection (arm, arm64, x86, x86-64)
+  hybris_arch = "arm64"
+  
+  # Default EGL platform
+  hybris_default_egl_platform = "null"
+  
+  # Default library paths for Android libraries
+  if (hybris_arch == "arm" || hybris_arch == "x86") {
+    hybris_default_ld_library_path = "/vendor/lib:/system/lib:/odm/lib"
+  } else {
+    hybris_default_ld_library_path = "/vendor/lib64:/system/lib64:/odm/lib64"
+  }
+}
+
+# Common configuration for all libhybris components
+config("libhybris_config") {
+  include_dirs = [
+    "hybris/include",
+    "hybris",
+  ]
+  
+  defines = [
+    "ANDROID_VERSION_MAJOR=$android_version_major",
+    "ANDROID_VERSION_MINOR=$android_version_minor", 
+    "ANDROID_VERSION_PATCH=$android_version_patch",
+    "DEFAULT_EGL_PLATFORM=\"$hybris_default_egl_platform\"",
+    "DEFAULT_HYBRIS_LD_LIBRARY_PATH=\"$hybris_default_ld_library_path\"",
+    "HAVE_CONFIG_H",
+    "_GNU_SOURCE",
+  ]
+  
+  cflags = [
+    "-Wno-unused-parameter",
+    "-Wno-sign-compare",
+    "-Wno-missing-field-initializers",
+    "-Wno-unused-function",
+    "-Wno-implicit-function-declaration",
+    "-Wno-deprecated-declarations",
+  ]
+  
+  if (hybris_enable_debug) {
+    cflags += [
+      "-ggdb",
+      "-O0",
+    ]
+    defines += [ "DEBUG" ]
+  }
+  
+  if (hybris_enable_trace) {
+    defines += [ "TRACE" ]
+  }
+  
+  if (hybris_enable_experimental) {
+    defines += [ "EXPERIMENTAL" ]
+  }
+  
+  if (hybris_enable_adreno_quirks) {
+    defines += [ "WANT_ADRENO_QUIRKS" ]
+  }
+  
+  if (hybris_enable_mali_quirks) {
+    defines += [ "WANT_MALI_QUIRKS" ]
+  }
+  
+  if (hybris_enable_arm_tracing) {
+    defines += [ "WANT_ARM_TRACING" ]
+  }
+  
+  if (!hybris_enable_property_cache) {
+    defines += [ "NO_RUNTIME_PROPERTY_CACHE" ]
+  }
+  
+  # Architecture-specific defines
+  if (hybris_arch == "arm") {
+    defines += [ "WANT_ARCH_ARM" ]
+  } else if (hybris_arch == "arm64") {
+    defines += [ "WANT_ARCH_ARM64" ]
+  } else if (hybris_arch == "x86") {
+    defines += [ "WANT_ARCH_X86" ]
+  } else if (hybris_arch == "x86-64") {
+    defines += [ "WANT_ARCH_X86_64" ]
+  }
+  
+  # Android version conditionals
+  if (android_version_major >= 13) {
+    defines += [ "HAS_ANDROID_13_0_0" ]
+  }
+  if (android_version_major >= 12) {
+    defines += [ "HAS_ANDROID_12_0_0" ]
+  }
+  if (android_version_major >= 11) {
+    defines += [ "HAS_ANDROID_11_0_0" ]
+  }
+  if (android_version_major >= 10) {
+    defines += [ "HAS_ANDROID_10_0_0" ]
+  }
+  if (android_version_major >= 9) {
+    defines += [ "HAS_ANDROID_9_0_0" ]
+  }
+  if (android_version_major >= 8) {
+    defines += [ "HAS_ANDROID_8_0_0" ]
+  }
+  if (android_version_major >= 7) {
+    defines += [ "HAS_ANDROID_7_0_0" ]
+  }
+  if (android_version_major >= 6) {
+    defines += [ "HAS_ANDROID_6_0_0" ]
+  }
+  if (android_version_major >= 5) {
+    defines += [ "HAS_ANDROID_5_0_0" ]
+  }
+  if (android_version_major >= 4) {
+    if (android_version_minor >= 2) {
+      defines += [ "HAS_ANDROID_4_2_0" ]
+    }
+    if (android_version_minor >= 1) {
+      defines += [ "HAS_ANDROID_4_1_0" ]
+    }
+    if (android_version_patch >= 3) {
+      defines += [ "HAS_ANDROID_4_0_3" ]
+    }
+    defines += [ "HAS_ANDROID_4_0_0" ]
+  }
+  if (android_version_major >= 2 && android_version_minor >= 3) {
+    defines += [ "HAS_ANDROID_2_3_0" ]
+  }
+}
+
+# Build libhybris-common library
+ohos_shared_library("libhybris-common") {
+  sources = [
+    "hybris/common/hooks.c",
+    "hybris/common/hooks_shm.c", 
+    "hybris/common/strlcpy.c",
+    "hybris/common/strlcat.c",
+    "hybris/common/logging.c",
+    "hybris/common/native_handle.c",
+    "hybris/common/sysconf.c",
+    "hybris/common/dso_handle_counters.cpp",
+    "hybris/common/legacy_properties/properties.c",
+    "hybris/common/legacy_properties/cache.c",
+  ]
+  
+  if (hybris_enable_property_cache) {
+    sources += [ "hybris/common/legacy_properties/runtime_cache.c" ]
+  }
+  
+  if (hybris_enable_arm_tracing) {
+    sources += [
+      "hybris/common/wrappers.c",
+      "hybris/common/wrapper_code_generic_arm.c",
+    ]
+  }
+  
+  # Add version-specific linker sources
+  if (hybris_arch != "arm64" && hybris_arch != "x86-64") {
+    sources += [
+      "hybris/common/jb/dlfcn.c",
+      "hybris/common/jb/linker.c",
+      "hybris/common/jb/linker_environ.c",
+      "hybris/common/jb/linker_format.c",
+      "hybris/common/jb/rt.c",
+    ]
+  }
+  
+  if (android_version_major >= 6) {
+    sources += [
+      "hybris/common/mm/dlfcn.c",
+      "hybris/common/mm/linker.cpp",
+      "hybris/common/mm/linker_allocator.cpp",
+      "hybris/common/mm/linker_block_allocator.cpp",
+      "hybris/common/mm/linker_memory.cpp",
+      "hybris/common/mm/linker_phdr.cpp",
+      "hybris/common/mm/linker_utils.cpp",
+      "hybris/common/mm/rt.cpp",
+    ]
+  }
+  
+  if (android_version_major >= 7) {
+    sources += [
+      "hybris/common/n/dlfcn.c",
+      "hybris/common/n/linker.cpp",
+      "hybris/common/n/linker_allocator.cpp", 
+      "hybris/common/n/linker_block_allocator.cpp",
+      "hybris/common/n/linker_memory.cpp",
+      "hybris/common/n/linker_phdr.cpp",
+      "hybris/common/n/linker_utils.cpp",
+      "hybris/common/n/rt.cpp",
+    ]
+  }
+  
+  if (android_version_major >= 8) {
+    sources += [
+      "hybris/common/o/dlfcn.c",
+      "hybris/common/o/linker.cpp",
+      "hybris/common/o/linker_allocator.cpp",
+      "hybris/common/o/linker_block_allocator.cpp", 
+      "hybris/common/o/linker_memory.cpp",
+      "hybris/common/o/linker_phdr.cpp",
+      "hybris/common/o/linker_utils.cpp",
+      "hybris/common/o/rt.cpp",
+    ]
+  }
+  
+  if (android_version_major >= 10) {
+    sources += [
+      "hybris/common/q/dlfcn.c",
+      "hybris/common/q/linker.cpp",
+      "hybris/common/q/linker_allocator.cpp",
+      "hybris/common/q/linker_block_allocator.cpp",
+      "hybris/common/q/linker_memory.cpp", 
+      "hybris/common/q/linker_phdr.cpp",
+      "hybris/common/q/linker_utils.cpp",
+      "hybris/common/q/rt.cpp",
+    ]
+  }
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = []
+  
+  external_deps = [
+    "c_utils:utils",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libandroid-properties
+ohos_shared_library("libandroid-properties") {
+  sources = [
+    "hybris/properties/hybris_properties.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system", 
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libhardware
+ohos_shared_library("libhardware") {
+  sources = [
+    "hybris/hardware/hardware.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater", 
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build EGL library
+ohos_shared_library("libEGL") {
+  sources = [
+    "hybris/egl/egl.c",
+    "hybris/egl/helper.cpp",
+    "hybris/egl/ws.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+    ":libhybris-eglplatformcommon",
+    ":libhybris-platformscommon",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build GLES v1 library  
+ohos_shared_library("libGLESv1_CM") {
+  sources = [
+    "hybris/glesv1/glesv1_cm.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+    ":libEGL",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build GLES v2 library
+ohos_shared_library("libGLESv2") {
+  sources = [
+    "hybris/glesv2/glesv2.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+    ":libEGL",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build EGL platform common
+ohos_static_library("libhybris-eglplatformcommon") {
+  sources = [
+    "hybris/egl/platforms/common/eglplatformcommon.cpp",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build platforms common library
+ohos_static_library("libhybris-platformscommon") {
+  sources = [
+    "hybris/platforms/common/nativewindowbase.cpp",
+    "hybris/platforms/common/platformcommon.cpp", 
+    "hybris/platforms/common/windowbuffer.cpp",
+  ]
+  
+  if (hybris_enable_wayland) {
+    sources += [
+      "hybris/platforms/common/server_wlegl.cpp",
+      "hybris/platforms/common/server_wlegl_buffer.cpp",
+      "hybris/platforms/common/server_wlegl_handle.cpp",
+    ]
+  }
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build EGL platform null
+ohos_shared_library("libhybris-eglplatform-null") {
+  sources = [
+    "hybris/egl/platforms/null/eglplatform_null.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+    ":libhybris-eglplatformcommon",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build additional libraries conditionally based on Android version
+if (android_version_major >= 4 && android_version_minor >= 2) {
+  ohos_shared_library("libsync") {
+    sources = [
+      "hybris/libsync/sync.c",
+    ]
+    
+    configs = [ ":libhybris_config" ]
+    
+    deps = [
+      ":libhybris-common",
+    ]
+    
+    install_images = [
+      "system",
+      "updater",
+    ]
+    
+    part_name = "libhybris"
+    subsystem_name = "thirdparty"
+  }
+}
+
+# Build other optional libraries
+ohos_shared_library("libcamera") {
+  sources = [
+    "hybris/camera/camera.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+ohos_shared_library("libvibrator") {
+  sources = [
+    "hybris/vibrator/vibrator.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+ohos_shared_library("libmedia") {
+  sources = [
+    "hybris/media/media.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+ohos_shared_library("libwifi") {
+  sources = [
+    "hybris/wifi/wifi.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libgralloc
+ohos_shared_library("libgralloc") {
+  sources = [
+    "hybris/gralloc/gralloc.c",
+    "hybris/gralloc/GrallocUsageConversion.cpp",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libui  
+ohos_shared_library("libui") {
+  sources = [
+    "hybris/ui/ui.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libinput service
+ohos_shared_library("libis") {
+  sources = [
+    "hybris/input/is.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libsf (Surface Flinger)
+ohos_shared_library("libsf") {
+  sources = [
+    "hybris/sf/sf.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libhwc2 (Hardware Composer 2)
+ohos_shared_library("libhwc2") {
+  sources = [
+    "hybris/hwc2/hwc2.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libnfc_nxp (conditionally, if headers are available)
+ohos_shared_library("libnfc_nxp") {
+  sources = [
+    "hybris/libnfc_nxp/libnfc_nxp.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libOpenCL
+ohos_shared_library("libOpenCL") {
+  sources = [
+    "hybris/opencl/opencl.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build libnfc_ndef_nxp
+ohos_shared_library("libnfc_ndef_nxp") {
+  sources = [
+    "hybris/libnfc_ndef_nxp/libnfc_ndef_nxp.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build utility programs
+ohos_executable("getprop") {
+  sources = [
+    "hybris/utils/getprop.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+    ":libandroid-properties",
+  ]
+  
+  install_enable = true
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+ohos_executable("setprop") {
+  sources = [
+    "hybris/utils/setprop.c",
+  ]
+  
+  configs = [ ":libhybris_config" ]
+  
+  deps = [
+    ":libhybris-common",
+    ":libandroid-properties",
+  ]
+  
+  install_enable = true
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Group target for all libhybris components
+group("libhybris") {
+  deps = [
+    ":libhybris-common",
+    ":libandroid-properties", 
+    ":libhardware",
+    ":libEGL",
+    ":libGLESv1_CM",
+    ":libGLESv2",
+    ":libcamera",
+    ":libvibrator",
+    ":libmedia",
+    ":libwifi",
+    ":libgralloc",
+    ":libui",
+    ":libis",
+    ":libsf",
+    ":libhwc2",
+    ":libnfc_nxp",
+    ":libnfc_ndef_nxp",
+    ":libOpenCL",
+    ":libhybris-eglplatformcommon",
+    ":libhybris-platformscommon",
+    ":libhybris-eglplatform-null",
+    ":getprop",
+    ":setprop",
+  ]
+  
+  if (android_version_major >= 4 && android_version_minor >= 2) {
+    deps += [ ":libsync" ]
+  }
+}
