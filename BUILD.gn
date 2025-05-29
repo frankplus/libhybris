@@ -247,8 +247,21 @@ ohos_shared_library("libhybris-common") {
     ]
   }
   
-  # Use only the base configuration for libhybris-common
-  configs = [ ":libhybris_config" ]
+  # Use base configuration plus Android version-specific headers for hooks.c
+  configs = []
+  
+  # Add Android version-specific bionic headers for dlfcn.h and Dl_info
+  if (android_version_major >= 10) {
+    configs += [ ":libhybris_q_config" ]
+  } else if (android_version_major >= 8) {
+    configs += [ ":libhybris_o_config" ]
+  } else if (android_version_major >= 7) {
+    configs += [ ":libhybris_n_config" ]
+  } else if (android_version_major >= 6) {
+    configs += [ ":libhybris_mm_config" ]
+  }
+
+  configs += [ ":libhybris_config" ]
   
   deps = []
   
@@ -1097,10 +1110,10 @@ group("libhybris") {
   deps = [
     ":libhybris-common",
     # ":jb",
-    ":mm", 
-    ":n",
-    ":o",
-    ":q",
+    # ":mm", 
+    # ":n",
+    # ":o",
+    # ":q",
     # ":libandroid-properties", 
     # ":libhardware",
     # ":libEGL",
