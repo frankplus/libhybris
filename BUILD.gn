@@ -50,28 +50,7 @@ if (hybris_arch == "arm" || hybris_arch == "x86") {
 
 # Common configuration for all libhybris components
 config("libhybris_config") {
-  include_dirs = []
-  
-  # Add version-specific bionic includes first (higher priority) based on Android version
-  if (android_version_major >= 10) {
-    include_dirs += [
-      "hybris/common/q/bionic/libc/include",
-      "hybris/common/q/bionic/libc",
-    ]
-  } else if (android_version_major >= 8) {
-    include_dirs += [
-      "hybris/common/o/bionic/libc/include", 
-      "hybris/common/o/bionic/libc",
-    ]
-  } else if (android_version_major >= 7) {
-    include_dirs += [
-      "hybris/common/n/bionic/libc/include",
-      "hybris/common/n/bionic/libc",
-    ]
-  }
-  
-  # Add standard hybris includes after bionic includes
-  include_dirs += [
+  include_dirs = [
     "hybris/include",
     "hybris",
     "hybris/include/hybris/common",
@@ -183,6 +162,55 @@ config("libhybris_config") {
   if (android_version_major >= 2 && android_version_minor >= 3) {
     defines += [ "HAS_ANDROID_2_3_0" ]
   }
+  
+  # Linker version defines based on Android version and architecture
+  if (hybris_arch != "arm64" && hybris_arch != "x86-64") {
+    defines += [ "WANT_LINKER_JB" ]
+  }
+  if (android_version_major >= 6) {
+    defines += [ "WANT_LINKER_MM" ]
+  }
+  if (android_version_major >= 7) {
+    defines += [ "WANT_LINKER_N" ]
+  }
+  if (android_version_major >= 8) {
+    defines += [ "WANT_LINKER_O" ]
+  }
+  if (android_version_major >= 10) {
+    defines += [ "WANT_LINKER_Q" ]
+  }
+}
+
+# Configuration for Android 6.0 (MM) specific sources
+config("libhybris_mm_config") {
+  include_dirs = [
+    "hybris/common/mm/bionic/libc/include",
+    "hybris/common/mm/bionic/libc",
+  ]
+}
+
+# Configuration for Android 7.0 (N) specific sources  
+config("libhybris_n_config") {
+  include_dirs = [
+    "hybris/common/n/bionic/libc/include",
+    "hybris/common/n/bionic/libc",
+  ]
+}
+
+# Configuration for Android 8.0 (O) specific sources
+config("libhybris_o_config") {
+  include_dirs = [
+    "hybris/common/o/bionic/libc/include", 
+    "hybris/common/o/bionic/libc",
+  ]
+}
+
+# Configuration for Android 10.0 (Q) specific sources
+config("libhybris_q_config") {
+  include_dirs = [
+    "hybris/common/q/bionic/libc/include",
+    "hybris/common/q/bionic/libc",
+  ]
 }
 
 # Build libhybris-common library
@@ -313,7 +341,20 @@ ohos_shared_library("libhybris-common") {
     }
   }
   
+  # Build the configs list based on Android version
   configs = [ ":libhybris_config" ]
+  if (android_version_major >= 6) {
+    configs += [ ":libhybris_mm_config" ]
+  }
+  if (android_version_major >= 7) {
+    configs += [ ":libhybris_n_config" ]
+  }
+  if (android_version_major >= 8) {
+    configs += [ ":libhybris_o_config" ]
+  }
+  if (android_version_major >= 10) {
+    configs += [ ":libhybris_q_config" ]
+  }
   
   deps = []
   
@@ -863,11 +904,11 @@ ohos_executable("setprop") {
 group("libhybris") {
   deps = [
     ":libhybris-common",
-    ":libandroid-properties", 
-    ":libhardware",
-    ":libEGL",
-    ":libGLESv1_CM",
-    ":libGLESv2",
+    # ":libandroid-properties", 
+    # ":libhardware",
+    # ":libEGL",
+    # ":libGLESv1_CM",
+    # ":libGLESv2",
     # ":libcamera",
     # ":libvibrator",
     # ":libmedia",
@@ -881,11 +922,11 @@ group("libhybris") {
     # ":libnfc_ndef_nxp",
     # ":libOpenCL",
     # ":libvulkan",
-    ":libhybris-eglplatformcommon",
-    ":libhybris-platformcommon",
-    ":libhybris-eglplatform-null",
-    ":getprop",
-    ":setprop",
+    # ":libhybris-eglplatformcommon",
+    # ":libhybris-platformcommon",
+    # ":libhybris-eglplatform-null",
+    # ":getprop",
+    # ":setprop",
   ]
   
   if (android_version_major >= 4 && android_version_minor >= 2) {
