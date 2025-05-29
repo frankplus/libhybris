@@ -342,7 +342,7 @@ ohos_shared_library("libhybris-common") {
   }
   
   # Build the configs list based on Android version
-  configs = [ ":libhybris_config" ]
+  configs = []
   if (android_version_major >= 6) {
     configs += [ ":libhybris_mm_config" ]
   }
@@ -355,6 +355,7 @@ ohos_shared_library("libhybris-common") {
   if (android_version_major >= 10) {
     configs += [ ":libhybris_q_config" ]
   }
+  configs += [ ":libhybris_config" ]
   
   deps = []
   

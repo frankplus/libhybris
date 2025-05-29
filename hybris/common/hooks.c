@@ -1547,7 +1547,11 @@ static int _hybris_hook_fgetpos(FILE *fp, bionic_fpos_t *pos)
 
     *pos = my_fpos.__pos;
 #else
-    int ret = fgetpos(_get_actual_fp(fp), pos);
+    fpos_t my_fpos;
+    int ret = fgetpos(_get_actual_fp(fp), &my_fpos);
+
+    /* musl's fpos_t is a union with __lldata as the position */
+    *pos = my_fpos.__lldata;
 #endif
 
     return ret;
@@ -1563,7 +1567,11 @@ static int _hybris_hook_fgetpos64(FILE *fp, bionic_fpos64_t *pos)
 
     *pos = my_fpos.__pos;
 #else
-    int ret = fgetpos(_get_actual_fp(fp), pos);
+    fpos_t my_fpos;
+    int ret = fgetpos(_get_actual_fp(fp), &my_fpos);
+
+    /* musl's fpos_t is a union with __lldata as the position, and fpos64_t is the same as fpos_t */
+    *pos = my_fpos.__lldata;
 #endif
 
     return ret;
@@ -1671,7 +1679,11 @@ static int _hybris_hook_fsetpos(FILE *fp, const bionic_fpos_t *pos)
 
     return fsetpos(_get_actual_fp(fp), &my_fpos);
 #else
-    return fsetpos(_get_actual_fp(fp), pos);
+    fpos_t my_fpos;
+    /* musl's fpos_t is a union with __lldata as the position */
+    my_fpos.__lldata = *pos;
+
+    return fsetpos(_get_actual_fp(fp), &my_fpos);
 #endif
 }
 
@@ -1686,7 +1698,11 @@ static int _hybris_hook_fsetpos64(FILE *fp, const bionic_fpos64_t *pos)
 
     return fsetpos64(_get_actual_fp(fp), &my_fpos);
 #else
-    return fsetpos(_get_actual_fp(fp), pos);
+    fpos_t my_fpos;
+    /* musl's fpos_t is a union with __lldata as the position, and fpos64_t is the same as fpos_t */
+    my_fpos.__lldata = *pos;
+
+    return fsetpos(_get_actual_fp(fp), &my_fpos);
 #endif
 }
 
@@ -2440,10 +2456,17 @@ static int _hybris_hook___cxa_thread_atexit(void (*dtor)(void *), void *obj,
     /* Call Glibc's implementation. Pass our symbol to prevent ourself from
      * being unloaded. */
     int ret;
+#ifdef __GLIBC__
     if ((ret = __cxa_thread_atexit(__dtor_wrapper, wrapped, &__dso_handle)) != 0) {
         free(wrapped);
         return ret;
     }
+#else
+    if ((ret = __cxa_thread_atexit(__dtor_wrapper, wrapped, (void *)&__dso_handle)) != 0) {
+        free(wrapped);
+        return ret;
+    }
+#endif
 
     /* Increase refcount of this dso_symbol. */
     __hybris_add_thread_local_dtor(dso_symbol);
@@ -2521,7 +2544,25 @@ static char* _hybris_hook__gnu_strerror_r(int errnum, char *buf, size_t buf_len)
 {
     TRACE_HOOK("errnum %d buf '%s' buf len %zu", errnum, buf, buf_len);
 
+#ifdef __GLIBC__
+    /* GNU glibc version returns char* */
     return strerror_r(errnum, buf, buf_len);
+#else
+    /* musl uses POSIX version which returns int, need to handle differently */
+    int ret = strerror_r(errnum, buf, buf_len);
+    if (ret == 0) {
+        return buf;  /* Success: return the buffer */
+    } else {
+        /* Error: fallback to strerror which is thread-safe in musl */
+        const char *error_msg = strerror(errnum);
+        if (error_msg && buf && buf_len > 0) {
+            strncpy(buf, error_msg, buf_len - 1);
+            buf[buf_len - 1] = '\0';
+            return buf;
+        }
+        return NULL;
+    }
+#endif
 }
 
 static int _hybris_hook_mprotect(void *addr, size_t len, int prot)
