@@ -63,6 +63,7 @@ config("libhybris_config") {
   defines = [
     "DEFAULT_EGL_PLATFORM=\"$hybris_default_egl_platform\"",
     "DEFAULT_HYBRIS_LD_LIBRARY_PATH=\"$hybris_default_ld_library_path\"",
+    "LINKER_PLUGIN_DIR=\"/system/lib/libhybris/linker\"",
     "HAVE_CONFIG_H",
     "_GNU_SOURCE",
   ]
@@ -74,6 +75,11 @@ config("libhybris_config") {
     "-Wno-unused-function",
     "-Wno-implicit-function-declaration",
     "-Wno-deprecated-declarations",
+    "-Wno-unused-value",
+    "-Wno-int-to-void-pointer-cast",
+    "-Wno-ignored-attributes",
+    "-Wno-gnu-statement-expression",
+    "-Wno-missing-braces",
   ]
   
   if (hybris_enable_debug) {

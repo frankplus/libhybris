@@ -2825,11 +2825,11 @@ static void *_hybris_hook_dlvsym(void *handle, const char *symbol, const char* v
     return _android_dlvsym(handle,symbol,version);
 }
 
-static void* _hybris_hook_dladdr(void *addr, Dl_info *info)
+static int _hybris_hook_dladdr(void *addr, Dl_info *info)
 {
     TRACE("addr %p info %p", addr, info);
 
-    return (void *)_android_dladdr(addr, info);
+    return _android_dladdr(addr, info);
 }
 
 static int _hybris_hook_dlclose(void *handle)
