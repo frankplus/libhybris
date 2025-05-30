@@ -1,0 +1,64 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("../../libhybris_args.gni")
+
+# Test configuration
+config("test_config") {
+  include_dirs = [
+    "../../hybris/include",
+    "../../hybris",
+    "//third_party/android-headers",
+  ]
+}
+
+# test_egl_configs test executable
+ohos_executable("test_egl_configs") {
+  sources = [
+    "test_egl_configs.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+  ]
+  
+  # Link with EGL library
+  if (hybris_enable_glvnd) {
+    # When GLVND is enabled, link with system EGL
+    external_deps = [ "EGL" ]
+  } else {
+    # Link with libhybris EGL
+    deps += [ "../egl:libEGL" ]
+  }
+  
+  install_images = [
+    "system",
+    "updater", 
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Group target for all test programs (for future expansion)
+group("tests") {
+  deps = [
+    ":test_egl_configs",
+  ]
+}

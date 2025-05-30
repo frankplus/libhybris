@@ -12,6 +12,39 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("../../libhybris_args.gni")
+
+# Import platform builds (equivalent to SUBDIRS = platforms in Makefile.am)
+group("platforms") {
+  deps = [ "platforms:platforms" ]
+}
+
+# Action to generate GLVND dispatch stubs (if GLVND is enabled)
+if (hybris_enable_glvnd) {
+  action_foreach("generate_glvnd_stubs") {
+    script = "//third_party/python/python"
+    sources = [
+      "glvnd/generate/egl.xml",
+      "glvnd/generate/egl_other.xml", 
+      "glvnd/generate/egl_hybris.xml",
+    ]
+    
+    outputs = [
+      "$target_gen_dir/glvnd/g_egldispatchstubs.h",
+      "$target_gen_dir/glvnd/g_egldispatchstubs.c",
+    ]
+    
+    args = [
+      rebase_path("glvnd/generate/gen_egl_dispatch.py", root_build_dir),
+      "header",
+      rebase_path("glvnd/generate/egl.xml", root_build_dir),
+      rebase_path("glvnd/generate/egl_other.xml", root_build_dir),
+      rebase_path("glvnd/generate/egl_hybris.xml", root_build_dir),
+    ]
+    
+    public_deps = [ ":generate_glvnd_stubs" ]
+  }
+}
 
 # Build EGL library
 ohos_shared_library("libEGL") {
@@ -21,21 +54,56 @@ ohos_shared_library("libEGL") {
     "ws.c",
   ]
   
+  # Add GLVND sources if enabled
+  if (hybris_enable_glvnd) {
+    sources += [
+      "glvnd/eglglvnd.cpp",
+      "glvnd/egldispatchstubs.h",
+      "glvnd/egldispatchstubs.c",
+      "$target_gen_dir/glvnd/g_egldispatchstubs.h",
+      "$target_gen_dir/glvnd/g_egldispatchstubs.c",
+    ]
+  }
+  
   configs = [ "../../:libhybris_config" ]
   
   cflags = [
     "-DPKGLIBDIR=\"/system/lib/libhybris/\"",
+    "-DDEFAULT_EGL_PLATFORM=\"${hybris_default_egl_platform}\"",
   ]
   
   cflags_cc = [
     "-DPKGLIBDIR=\"/system/lib/libhybris/\"",
+    "-DDEFAULT_EGL_PLATFORM=\"${hybris_default_egl_platform}\"",
   ]
+  
+  # Add Mesa headers support if enabled
+  if (hybris_enable_mesa) {
+    cflags += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+    cflags_cc += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+  }
+  
+  # Add GLVND-specific flags
+  if (hybris_enable_glvnd) {
+    include_dirs = [
+      "glvnd",
+      "$target_gen_dir/glvnd",
+    ]
+    cflags += [ "-fvisibility=hidden" ]
+    cflags_cc += [ "-fvisibility=hidden" ]
+  }
   
   deps = [
     "../common:libhybris-common",
-    "../platforms:libhybris-eglplatformcommon",
+    "../hardware:libhardware",
+    "platforms:libhybris-eglplatformcommon",
     "../platforms:libhybris-platformcommon",
   ]
+  
+  # Add GLVND dependency if enabled
+  if (hybris_enable_glvnd) {
+    deps += [ ":generate_glvnd_stubs" ]
+  }
   
   install_images = [
     "system",
@@ -44,4 +112,29 @@ ohos_shared_library("libEGL") {
   
   part_name = "libhybris"
   subsystem_name = "thirdparty"
+}
+
+# Process GLVND vendor configuration template (if GLVND is enabled)
+if (hybris_enable_glvnd) {
+  action("generate_glvnd_vendor_json") {
+    script = "//build/lite/run_shell_cmd.py"
+    inputs = [ "glvnd/10_libhybris.json.in" ]
+    outputs = [ "$target_gen_dir/10_libhybris.json" ]
+    
+    # Replace @GL_LIB_SUFFIX@ with _libhybris for GLVND builds
+    args = [
+      "sed",
+      "s/@GL_LIB_SUFFIX@/_libhybris/g",
+      rebase_path("glvnd/10_libhybris.json.in", root_build_dir),
+    ]
+    args += [ ">", rebase_path("$target_gen_dir/10_libhybris.json", root_build_dir) ]
+  }
+
+  ohos_prebuilt_etc("libhybris_glvnd_vendor") {
+    source = "$target_gen_dir/10_libhybris.json"
+    relative_install_dir = "glvnd/egl_vendor.d"
+    deps = [ ":generate_glvnd_vendor_json" ]
+    part_name = "libhybris"
+    subsystem_name = "thirdparty"
+  }
 }

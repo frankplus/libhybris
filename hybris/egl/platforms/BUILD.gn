@@ -1,0 +1,124 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("../../../libhybris_args.gni")
+
+# Build EGL platform common library (equivalent to libhybris-eglplatformcommon.la)
+ohos_static_library("libhybris-eglplatformcommon") {
+  sources = [
+    "common/eglplatformcommon.cpp",
+  ]
+  
+  configs = [ "../../../:libhybris_config" ]
+  
+  include_dirs = [
+    "../../include",
+    "../../common",
+    "..",
+    "common",
+    "../../platforms/common",
+  ]
+  
+  cflags = []
+  cflags_cc = []
+  
+  if (hybris_enable_trace) {
+    cflags += [ "-DDEBUG" ]
+    cflags_cc += [ "-DDEBUG" ]
+  }
+  
+  if (hybris_enable_debug) {
+    cflags += [ "-ggdb", "-O0" ]
+    cflags_cc += [ "-ggdb", "-O0" ]
+  }
+  
+  if (hybris_enable_mesa) {
+    cflags += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+    cflags_cc += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+  }
+  
+  deps = [
+    "../../common:libhybris-common",
+    "../../gralloc:libgralloc",
+    "../../platforms:libhybris-platformcommon",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Build EGL platform null (debug platform that doesn't require complex integration)
+ohos_shared_library("eglplatform_null") {
+  sources = [
+    "null/eglplatform_null.c",
+  ]
+  
+  configs = [ "../../../:libhybris_config" ]
+  
+  include_dirs = [
+    "../../include",
+    "../../common",
+    "..",
+    "common",
+  ]
+  
+  cflags = []
+  
+  if (hybris_enable_trace) {
+    cflags += [ "-DDEBUG" ]
+  }
+  
+  if (hybris_enable_debug) {
+    cflags += [ "-ggdb", "-O0" ]
+  }
+  
+  deps = [
+    ":libhybris-eglplatformcommon",
+    "../../gralloc:libgralloc",
+  ]
+  
+  # Module flags to match autotools behavior
+  ldflags = [
+    "-Wl,--no-undefined",
+    "-Wl,--export-dynamic",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  # Install to the platform-specific directory
+  relative_install_dir = "libhybris"
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Group target that builds the platforms (equivalent to SUBDIRS in Makefile.am)
+group("platforms") {
+  deps = [
+    ":libhybris-eglplatformcommon",
+    ":eglplatform_null",
+  ]
+  
+  # Add other platforms conditionally when they are implemented
+  # if (android_version_major >= 4 && android_version_minor >= 2) {
+  #   deps += [ ":eglplatform_hwcomposer" ]
+  # }
+  # 
+  # if (hybris_enable_wayland) {
+  #   deps += [ ":eglplatform_wayland" ]
+  # }
+}

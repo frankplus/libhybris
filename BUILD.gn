@@ -161,7 +161,7 @@ group("libhybris") {
     "hybris/common:libhybris-common",
     # "hybris/properties:libandroid-properties",
     # "hybris/hardware:libhardware",
-    # "hybris/egl:libEGL",
+    "hybris/egl:libEGL",
     # "hybris/glesv1:libGLESv1_CM", 
     # "hybris/glesv2:libGLESv2",
     # "hybris/platforms:libhybris-platformcommon",
