@@ -80,7 +80,8 @@ config("libhybris_config") {
     "-Wno-ignored-attributes",
     "-Wno-gnu-statement-expression",
     "-Wno-missing-braces",
-    "-Wno-unused-private-field"
+    "-Wno-unused-private-field",
+    "-Wno-unused-variable"
   ]
   
   if (hybris_enable_debug) {
