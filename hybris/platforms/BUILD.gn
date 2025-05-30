@@ -15,7 +15,7 @@ import("//build/ohos.gni")
 import("../../libhybris_args.gni")
 
 # Build platforms common library
-ohos_static_library("libhybris-platformcommon") {
+ohos_shared_library("libhybris-platformcommon") {
   sources = [
     "common/nativewindowbase.cpp",
     "common/platformcommon.cpp",
@@ -33,10 +33,73 @@ ohos_static_library("libhybris-platformcommon") {
 
   configs = [ "../../:libhybris_config" ]
   
+  # Add specific include paths to match Makefile.am behavior
+  include_dirs = [
+    "../../hybris/include",
+    "../../hybris/egl", 
+    "../../hybris/common",
+    "common",
+  ]
+  
+  # Add trace/debug/mesa flags to match Makefile.am conditionals
+  cflags = []
+  cflags_cc = []
+  
+  if (hybris_enable_trace) {
+    cflags += [ "-DDEBUG" ]
+    cflags_cc += [ "-DDEBUG" ]
+  }
+  
+  if (hybris_enable_debug) {
+    cflags += [ "-ggdb", "-O0" ]
+    cflags_cc += [ "-ggdb", "-O0" ]
+  }
+  
+  if (hybris_enable_mesa) {
+    cflags += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+    cflags_cc += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+  }
+  
   deps = [
     "../common:libhybris-common",
   ]
   
+  # Add libsync dependency conditionally for Android 4.2+ and 5.0+ (matches Makefile.am)
+  if ((android_version_major >= 4 && android_version_minor >= 2) || 
+      (android_version_major >= 5)) {
+    deps += [ "../libsync:libsync" ]
+  }
+  
+  # Add wayland dependencies if enabled (matches Makefile.am WANT_WAYLAND section)
+  if (hybris_enable_wayland) {
+    # Note: External wayland dependencies would be added here if available
+    # external_deps += [ "wayland-client", "wayland-server" ]
+  }
+  
+  # Library versioning info (matching -version-info "1":"0":"0" in Makefile.am)
+  # Note: OpenHarmony uses different versioning approach than libtool
+  output_name = "hybris-platformcommon"
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Install platform common headers (matching platformcommon_HEADERS in Makefile.am)
+ohos_prebuilt_etc("libhybris-platformcommon-headers") {
+  source = "common/support.h"
+  relative_install_dir = "hybris/platformcommon"
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+ohos_prebuilt_etc("libhybris-platformcommon-nativewindowbase-header") {
+  source = "common/nativewindowbase.h"
+  relative_install_dir = "hybris/platformcommon"
   part_name = "libhybris"
   subsystem_name = "thirdparty"
 }

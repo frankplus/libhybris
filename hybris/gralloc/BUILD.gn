@@ -24,6 +24,8 @@ ohos_shared_library("libgralloc") {
   
   deps = [
     "../common:libhybris-common",
+    "../ui:libui",
+    "../hardware:libhardware",
   ]
   
   install_images = [
