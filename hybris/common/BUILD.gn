@@ -1,0 +1,385 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("../../libhybris_args.gni")
+
+# Configuration for Android 6.0 (MM) specific sources
+config("libhybris_mm_config") {
+  include_dirs = [
+    "mm/bionic/libc/include",
+    "mm/bionic/libc",
+  ]
+}
+
+# Configuration for Android 7.0 (N) specific sources  
+config("libhybris_n_config") {
+  include_dirs = [
+    "n/bionic/libc/include",
+    "n/bionic/libc",
+  ]
+}
+
+# Configuration for Android 8.0 (O) specific sources
+config("libhybris_o_config") {
+  include_dirs = [
+    "o/bionic/libc/include", 
+    "o/bionic/libc",
+  ]
+}
+
+# Configuration for Android 10.0 (Q) specific sources
+config("libhybris_q_config") {
+  include_dirs = [
+    "q/bionic/libc/include",
+    "q/bionic/libc",
+    "q"
+  ]
+}
+
+# Build libhybris-common library
+# This contains ONLY the core hybris functionality, NOT the linker modules
+# (those are built separately and loaded at runtime)
+ohos_shared_library("libhybris-common") {
+  sources = [
+    "hooks.c",
+    "hooks_shm.c", 
+    "strlcpy.c",
+    "strlcat.c",
+    "logging.c",
+    "native_handle.c",
+    "sysconf.c",
+    "dso_handle_counters.cpp",
+    "legacy_properties/properties.c",
+    "legacy_properties/cache.c",
+  ]
+
+  if (hybris_enable_property_cache) {
+    sources += [ "legacy_properties/runtime_cache.c" ]
+  }
+  
+  if (hybris_enable_arm_tracing) {
+    sources += [
+      "wrappers.c",
+      "wrapper_code_generic_arm.c",
+    ]
+  }
+  
+  # Use base configuration plus Android version-specific headers for hooks.c
+  configs = []
+  
+  # Add Android version-specific bionic headers for dlfcn.h and Dl_info
+  if (android_version_major >= 10) {
+    configs += [ ":libhybris_q_config" ]
+  } else if (android_version_major >= 8) {
+    configs += [ ":libhybris_o_config" ]
+  } else if (android_version_major >= 7) {
+    configs += [ ":libhybris_n_config" ]
+  } else if (android_version_major >= 6) {
+    configs += [ ":libhybris_mm_config" ]
+  }
+
+  configs += [ "../../:libhybris_config" ]
+  
+  deps = []
+  
+  external_deps = [
+    "c_utils:utils",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Android Linker Modules
+# These are essential components that provide Android version-specific linker implementations.
+# They are loaded at runtime by hooks.c based on detected Android SDK version.
+
+# JellyBean linker module (Android API 16-20)
+ohos_shared_library("jb") {
+  sources = [
+    "jb/dlfcn.c",
+    "jb/linker.c", 
+    "jb/linker_environ.c",
+    "jb/linker_format.c",
+    "jb/rt.c",
+    "strlcpy.c",
+  ]
+  
+  include_dirs = [
+    "../include",
+    ".",
+  ]
+  
+  cflags = [
+    "-DDEFAULT_HYBRIS_LD_LIBRARY_PATH=\"${hybris_default_ld_library_path}\"",
+    "-DLINKER_DEBUG=0",
+  ]
+  
+  if (hybris_arch == "arm") {
+    cflags += [
+      "-DHAVE_ARM_TLS_REGISTER",
+      "-DANDROID_ARM_LINKER",
+    ]
+  } else if (hybris_arch == "x86") {
+    cflags += [ "-DANDROID_X86_LINKER" ]
+  }
+  
+  if (hybris_enable_debug) {
+    cflags += [ "-DLINKER_DEBUG=1" ]
+  }
+  
+  if (hybris_enable_arm_tracing && hybris_arch == "arm") {
+    cflags += [ "-DWANT_ARM_TRACING" ]
+  }
+  
+  # Install to linker directory
+  install_enable = true
+  relative_install_dir = "libhybris/linker"
+  output_name = "jb"
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Marshmallow linker module (Android API 21-23)  
+ohos_shared_library("mm") {
+  sources = [
+    "mm/hybris_compat.cpp",
+    "mm/dlfcn.cpp",
+    "mm/linker.cpp",
+    "mm/linker_allocator.cpp",
+    "mm/linker_block_allocator.cpp", 
+    "mm/linker_memory.cpp",
+    "mm/linker_phdr.cpp",
+    "mm/linker_sdk_versions.cpp",
+    "mm/rt.cpp",
+    "strlcpy.c",
+  ]
+  
+  configs = [ ":libhybris_mm_config", "../../:libhybris_config" ]
+  
+  cflags = [
+    "-DDEFAULT_HYBRIS_LD_LIBRARY_PATH=\"${hybris_default_ld_library_path}\"",
+    "-DLINKER_DEBUG=0",
+  ]
+  
+  if (hybris_arch == "arm") {
+    cflags += [
+      "-DHAVE_ARM_TLS_REGISTER", 
+      "-DANDROID_ARM_LINKER",
+    ]
+  } else if (hybris_arch == "x86") {
+    cflags += [ "-DANDROID_X86_LINKER" ]
+  }
+  
+  if (hybris_enable_debug) {
+    cflags += [ "-DLINKER_DEBUG=1" ]
+  }
+  
+  if (hybris_enable_arm_tracing && hybris_arch == "arm") {
+    cflags += [ "-DWANT_ARM_TRACING" ]
+  }
+  
+  # Install to linker directory
+  install_enable = true
+  relative_install_dir = "libhybris/linker"
+  output_name = "mm"
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Nougat linker module (Android API 24-25)
+ohos_shared_library("n") {
+  sources = [
+    "n/hybris_compat.cpp",
+    "n/dlfcn.cpp",
+    "n/linker.cpp",
+    "n/linker_allocator.cpp", 
+    "n/linker_block_allocator.cpp",
+    "n/linker_dlwarning.cpp",
+    "n/linker_gdb_support.cpp",
+    "n/linker_mapped_file_fragment.cpp",
+    "n/linker_memory.cpp",
+    "n/linker_phdr.cpp",
+    "n/linker_sdk_versions.cpp",
+    "n/linker_utils.cpp",
+    "n/rt.cpp",
+    "strlcpy.c",
+  ]
+  
+  configs = [ ":libhybris_n_config", "../../:libhybris_config" ]
+  
+  cflags = [
+    "-DDEFAULT_HYBRIS_LD_LIBRARY_PATH=\"${hybris_default_ld_library_path}\"",
+    "-DLINKER_DEBUG=0", 
+  ]
+  
+  if (hybris_arch == "arm") {
+    cflags += [
+      "-DHAVE_ARM_TLS_REGISTER",
+      "-DANDROID_ARM_LINKER",
+    ]
+  } else if (hybris_arch == "x86") {
+    cflags += [ "-DANDROID_X86_LINKER" ]
+  }
+  
+  if (hybris_enable_debug) {
+    cflags += [ "-DLINKER_DEBUG=1" ]
+  }
+  
+  if (hybris_enable_arm_tracing && hybris_arch == "arm") {
+    cflags += [ "-DWANT_ARM_TRACING" ]
+  }
+  
+  # Install to linker directory
+  install_enable = true
+  relative_install_dir = "libhybris/linker"
+  output_name = "n"
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Oreo linker module (Android API 26-28)
+ohos_shared_library("o") {
+  sources = [
+    "o/hybris_compat.cpp",
+    "o/dlfcn.cpp",
+    "o/linker.cpp",
+    "o/linker_allocator.cpp",
+    "o/linker_block_allocator.cpp",
+    "o/linker_cfi.cpp",
+    "o/linker_config.cpp",
+    "o/linker_dlwarning.cpp",
+    "o/linker_gdb_support.cpp",
+    "o/linker_globals.cpp",
+    "o/linker_logger.cpp",
+    "o/linker_main.cpp",
+    "o/linker_mapped_file_fragment.cpp",
+    "o/linker_memory.cpp",
+    "o/linker_namespaces.cpp",
+    "o/linker_phdr.cpp",
+    "o/linker_sdk_versions.cpp",
+    "o/linker_soinfo.cpp",
+    "o/linker_utils.cpp",
+    "o/rt.cpp",
+    "strlcpy.c",
+  ]
+  
+  configs = [ ":libhybris_o_config", "../../:libhybris_config" ]
+  
+  cflags = [
+    "-DDEFAULT_HYBRIS_LD_LIBRARY_PATH=\"${hybris_default_ld_library_path}\"",
+    "-DLINKER_DEBUG=0",
+  ]
+  
+  if (hybris_arch == "arm") {
+    cflags += [
+      "-DHAVE_ARM_TLS_REGISTER",
+      "-DANDROID_ARM_LINKER",
+    ]
+  } else if (hybris_arch == "x86") {
+    cflags += [ "-DANDROID_X86_LINKER" ]
+  }
+  
+  if (hybris_enable_debug) {
+    cflags += [ "-DLINKER_DEBUG=1" ]
+  }
+  
+  if (hybris_enable_arm_tracing && hybris_arch == "arm") {
+    cflags += [ "-DWANT_ARM_TRACING" ]
+  }
+  
+  # Install to linker directory
+  install_enable = true
+  relative_install_dir = "libhybris/linker"
+  output_name = "o"
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Q (Android 10) linker module (Android API 29+)
+ohos_shared_library("q") {
+  sources = [
+    "q/hybris_compat.cpp",
+    "q/bionic/libc/bionic/bionic_call_ifunc_resolver.cpp",
+    "q/dlfcn.cpp",
+    "q/linker.cpp",
+    "q/linker_allocator.cpp",
+    "q/linker_block_allocator.cpp",
+    "q/linker_cfi.cpp",
+    "q/linker_config.cpp",
+    "q/linker_dlwarning.cpp",
+    "q/linker_gdb_support.cpp",
+    "q/linker_globals.cpp",
+    "q/linker_logger.cpp",
+    "q/linker_main.cpp",
+    "q/linker_mapped_file_fragment.cpp",
+    "q/linker_memory.cpp", 
+    "q/linker_namespaces.cpp",
+    "q/linker_phdr.cpp",
+    "q/linker_sdk_versions.cpp",
+    "q/linker_soinfo.cpp",
+    "q/linker_tls.cpp",
+    "q/linker_utils.cpp",
+    "q/rt.cpp",
+    "q/bionic/libc/bionic/bionic_elf_tls.cpp",
+    "q/bionic/libc/bionic/bionic_allocator.cpp",
+    "strlcpy.c",
+  ]
+
+  # ARM64-specific assembly file
+  if (hybris_arch == "arm64") {
+    sources += [ "q/tlsdesc_resolver.S" ]
+  }
+  
+  configs = [ ":libhybris_q_config", "../../:libhybris_config" ]
+  
+  cflags = [
+    "-DDEFAULT_HYBRIS_LD_LIBRARY_PATH=\"${hybris_default_ld_library_path}\"",
+    "-DLINKER_DEBUG=0",
+  ]
+  
+  if (hybris_arch == "arm") {
+    cflags += [
+      "-DHAVE_ARM_TLS_REGISTER",
+      "-DANDROID_ARM_LINKER",
+    ]
+  } else if (hybris_arch == "x86") {
+    cflags += [ "-DANDROID_X86_LINKER" ]
+  }
+  
+  if (hybris_enable_debug) {
+    cflags += [ "-DLINKER_DEBUG=1" ]
+  }
+  
+  if (hybris_enable_arm_tracing && hybris_arch == "arm") {
+    cflags += [ "-DWANT_ARM_TRACING" ]
+  }
+  
+  # Install to linker directory
+  install_enable = true
+  relative_install_dir = "libhybris/linker"
+  output_name = "q"
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}

@@ -1,0 +1,47 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Shared build arguments for libhybris components
+declare_args() {
+  # Android API level for compatibility
+  android_version_major = 11
+  android_version_minor = 0
+  android_version_patch = 0
+  
+  # Build configuration options
+  hybris_enable_debug = false
+  hybris_enable_trace = false
+  hybris_enable_experimental = false
+  hybris_enable_adreno_quirks = false
+  hybris_enable_mali_quirks = false
+  hybris_enable_arm_tracing = false
+  hybris_enable_mesa = false
+  hybris_enable_wayland = false
+  hybris_enable_glvnd = false
+  hybris_enable_property_cache = false
+  hybris_enable_ubuntu_linker_overrides = false
+  hybris_enable_stub_linker = false
+  
+  # Architecture selection (arm, arm64, x86, x86-64)
+  hybris_arch = "arm64"
+  
+  # Default EGL platform
+  hybris_default_egl_platform = "null"
+}
+
+# Default library paths for Android libraries
+if (hybris_arch == "arm" || hybris_arch == "x86") {
+  hybris_default_ld_library_path = "/vendor/lib:/system/lib:/odm/lib"
+} else {
+  hybris_default_ld_library_path = "/vendor/lib64:/system/lib64:/odm/lib64"
+}
