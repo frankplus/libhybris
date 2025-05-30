@@ -876,12 +876,7 @@ ohos_shared_library("mm") {
     "hybris/common/strlcpy.c",
   ]
   
-  include_dirs = [
-    "hybris/include",
-    "hybris/common",
-  ]
-  
-  configs = [ ":libhybris_config", ":libhybris_mm_config" ]
+  configs = [ ":libhybris_mm_config", ":libhybris_config" ]
   
   cflags = [
     "-DDEFAULT_HYBRIS_LD_LIBRARY_PATH=\"${hybris_default_ld_library_path}\"",
@@ -933,12 +928,7 @@ ohos_shared_library("n") {
     "hybris/common/strlcpy.c",
   ]
   
-  include_dirs = [
-    "hybris/include",
-    "hybris/common",
-  ]
-  
-  configs = [ ":libhybris_config", ":libhybris_n_config" ]
+  configs = [ ":libhybris_n_config", ":libhybris_config" ]
   
   cflags = [
     "-DDEFAULT_HYBRIS_LD_LIBRARY_PATH=\"${hybris_default_ld_library_path}\"",
@@ -997,12 +987,7 @@ ohos_shared_library("o") {
     "hybris/common/strlcpy.c",
   ]
   
-  include_dirs = [
-    "hybris/include",
-    "hybris/common",
-  ]
-  
-  configs = [ ":libhybris_config", ":libhybris_o_config" ]
+  configs = [ ":libhybris_o_config", ":libhybris_config" ]
   
   cflags = [
     "-DDEFAULT_HYBRIS_LD_LIBRARY_PATH=\"${hybris_default_ld_library_path}\"",
