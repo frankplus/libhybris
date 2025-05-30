@@ -43,7 +43,7 @@ static inline int __futex(volatile void* ftx, int op, int value,
   // Our generated syscall assembler sets errno, but our callers (pthread functions) don't want to.
   int saved_errno = errno;
   int result = syscall(__NR_futex, ftx, op, value, timeout, NULL, bitset);
-  if ((result == -1)) {
+  if (result == -1) {
     result = -errno;
     errno = saved_errno;
   }

@@ -80,6 +80,7 @@ config("libhybris_config") {
     "-Wno-ignored-attributes",
     "-Wno-gnu-statement-expression",
     "-Wno-missing-braces",
+    "-Wno-unused-private-field"
   ]
   
   if (hybris_enable_debug) {
@@ -216,6 +217,7 @@ config("libhybris_q_config") {
   include_dirs = [
     "hybris/common/q/bionic/libc/include",
     "hybris/common/q/bionic/libc",
+    "hybris/common/q"
   ]
 }
 
@@ -1067,12 +1069,7 @@ ohos_shared_library("q") {
     sources += [ "hybris/common/q/tlsdesc_resolver.S" ]
   }
   
-  include_dirs = [
-    "hybris/include",
-    "hybris/common", 
-  ]
-  
-  configs = [ ":libhybris_config", ":libhybris_q_config" ]
+  configs = [ ":libhybris_q_config", ":libhybris_config" ]
   
   cflags = [
     "-DDEFAULT_HYBRIS_LD_LIBRARY_PATH=\"${hybris_default_ld_library_path}\"",
@@ -1113,7 +1110,7 @@ group("libhybris") {
     # ":mm", 
     # ":n",
     # ":o",
-    # ":q",
+    ":q",
     # ":libandroid-properties", 
     # ":libhardware",
     # ":libEGL",
