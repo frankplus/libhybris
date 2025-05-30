@@ -12,22 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-
-# Build EGL platform common
-ohos_static_library("libhybris-eglplatformcommon") {
-  sources = [
-    "common/eglplatformcommon.cpp",
-  ]
-  
-  configs = [ "../../:libhybris_config" ]
-  
-  deps = [
-    "../common:libhybris-common",
-  ]
-  
-  part_name = "libhybris"
-  subsystem_name = "thirdparty"
-}
+import("../../libhybris_args.gni")
 
 # Build platforms common library
 ohos_static_library("libhybris-platformcommon") {
@@ -50,28 +35,6 @@ ohos_static_library("libhybris-platformcommon") {
   
   deps = [
     "../common:libhybris-common",
-  ]
-  
-  part_name = "libhybris"
-  subsystem_name = "thirdparty"
-}
-
-# Build EGL platform null
-ohos_shared_library("libhybris-eglplatform-null") {
-  sources = [
-    "null/eglplatform_null.c",
-  ]
-  
-  configs = [ "../../:libhybris_config" ]
-  
-  deps = [
-    "../common:libhybris-common",
-    ":libhybris-eglplatformcommon",
-  ]
-  
-  install_images = [
-    "system",
-    "updater",
   ]
   
   part_name = "libhybris"

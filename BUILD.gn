@@ -165,8 +165,6 @@ group("libhybris") {
     # "hybris/glesv1:libGLESv1_CM", 
     # "hybris/glesv2:libGLESv2",
     # "hybris/platforms:libhybris-platformcommon",
-    # "hybris/platforms:libhybris-eglplatformcommon",
-    # "hybris/platforms:libhybris-eglplatform-null",
     # "hybris/camera:libcamera",
     # "hybris/vibrator:libvibrator",
     # "hybris/media:libmedia",
