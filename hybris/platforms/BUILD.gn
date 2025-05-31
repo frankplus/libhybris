@@ -62,6 +62,7 @@ ohos_shared_library("libhybris-platformcommon") {
   
   deps = [
     "../common:libhybris-common",
+    "../gralloc:libgralloc",
   ]
   
   # Add libsync dependency conditionally for Android 4.2+ and 5.0+ (matches Makefile.am)

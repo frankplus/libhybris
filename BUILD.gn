@@ -162,8 +162,8 @@ group("libhybris") {
     # "hybris/properties:libandroid-properties",
     # "hybris/hardware:libhardware",
     "hybris/egl:libEGL",
-    # "hybris/glesv1:libGLESv1_CM", 
-    # "hybris/glesv2:libGLESv2",
+    "hybris/glesv1:libGLESv1_CM", 
+    "hybris/glesv2:libGLESv2",
     # "hybris/platforms:libhybris-platformcommon",
     # "hybris/camera:libcamera",
     # "hybris/vibrator:libvibrator",
@@ -180,6 +180,7 @@ group("libhybris") {
     # "hybris/vulkan:libvulkan",
     # "hybris/utils:getprop",
     # "hybris/utils:setprop",
+    "hybris/tests:tests",
   ]
   
   # Conditionally add libsync for Android 4.2+
