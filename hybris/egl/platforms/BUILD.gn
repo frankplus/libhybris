@@ -111,6 +111,7 @@ group("platforms") {
   deps = [
     ":libhybris-eglplatformcommon",
     ":eglplatform_null",
+    "ohos:eglplatform_ohos",
   ]
   
   # Add other platforms conditionally when they are implemented
