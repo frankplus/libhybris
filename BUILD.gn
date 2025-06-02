@@ -29,7 +29,7 @@ config("libhybris_config") {
   defines = [
     "DEFAULT_EGL_PLATFORM=\"$hybris_default_egl_platform\"",
     "DEFAULT_HYBRIS_LD_LIBRARY_PATH=\"$hybris_default_ld_library_path\"",
-    "LINKER_PLUGIN_DIR=\"/system/lib/libhybris/linker\"",
+    "LINKER_PLUGIN_DIR=\"/lib64/libhybris/linker\"",
     "HAVE_CONFIG_H",
     "_GNU_SOURCE",
   ]

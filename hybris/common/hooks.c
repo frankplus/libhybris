@@ -3693,7 +3693,7 @@ static void __hybris_linker_init()
     if (user_linker_dir)
         linker_dir = user_linker_dir;
 
-    snprintf(path, PATH_MAX, "%s/%s.so", linker_dir, name);
+    snprintf(path, PATH_MAX, "%s/%s.z.so", linker_dir, name);
 
     LOGD("Loading linker from %s..", path);
 
