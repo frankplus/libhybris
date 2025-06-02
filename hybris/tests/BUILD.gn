@@ -23,7 +23,92 @@ config("test_config") {
   ]
 }
 
-# test_egl_configs test executable
+# Variables to handle conditional EGL/GLES linking (matching Makefile.am behavior)
+if (hybris_enable_glvnd) {
+  # When GLVND is enabled, link with system EGL/GLES
+  libegl_dependency = "EGL"
+  libglesv2_dependency = "GLESv2"
+} else {
+  # Link with libhybris EGL/GLES
+  libegl_dependency = "../egl:libEGL"
+  libglesv2_dependency = "../glesv2:libGLESv2"
+}
+
+# test_audio - Audio hardware test
+ohos_executable("test_audio") {
+  sources = [
+    "test_audio.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  cflags = [ "-std=c99" ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../hardware:libhardware",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_egl - Basic EGL test
+ohos_executable("test_egl") {
+  sources = [
+    "test_egl.cpp",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  include_dirs = [
+    "../egl/platforms/common",
+    "../egl/platforms/hwcomposer",
+    "../libsync",
+    "../common",
+    "../platforms/common",
+  ]
+  
+  cxxflags = [ "-std=gnu++11" ]
+  
+  if (hybris_enable_mesa) {
+    cxxflags += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+  }
+  
+  # HWComposer2 support detection
+  cxxflags += [ "-DHAS_HWCOMPOSER2_HEADERS=1" ]
+  
+  deps = [
+    "../common:libhybris-common",
+  ]
+  
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency ]
+  } else {
+    deps += [ libegl_dependency ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_egl_configs - EGL configuration test
 ohos_executable("test_egl_configs") {
   sources = [
     "test_egl_configs.c",
@@ -40,25 +125,676 @@ ohos_executable("test_egl_configs") {
   
   # Link with EGL library
   if (hybris_enable_glvnd) {
-    # When GLVND is enabled, link with system EGL
-    external_deps = [ "EGL" ]
+    external_deps = [ libegl_dependency ]
   } else {
-    # Link with libhybris EGL
-    deps += [ "../egl:libEGL" ]
+    deps += [ libegl_dependency ]
   }
   
   install_images = [
     "system",
-    "updater", 
+    "updater",
   ]
   
   part_name = "libhybris"
   subsystem_name = "thirdparty"
 }
 
-# Group target for all test programs (for future expansion)
+# test_glesv2 - OpenGL ES 2.0 test
+ohos_executable("test_glesv2") {
+  sources = [
+    "test_glesv2.cpp",
+    "test_common.cpp",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  include_dirs = [
+    "../common",
+    "../platforms/common",
+    "../egl/platforms/common",
+    "../egl/platforms/hwcomposer",
+    "../libsync",
+  ]
+  
+  cxxflags = [
+    "-std=gnu++11",
+    "-DUSE_HWCOMPOSER=1",
+  ]
+  
+  if (hybris_enable_mesa) {
+    cxxflags += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+  }
+  
+  # HWComposer2 support detection
+  cxxflags += [ "-DHAS_HWCOMPOSER2_HEADERS=1" ]
+  
+  libs = [ "m" ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../egl/platforms:libhybris-eglplatformcommon",
+    "../platforms:libhybris-platformcommon",
+    "../hardware:libhardware",
+  ]
+  
+  # Add libsync for Android 4.2+ and 5.0+
+  if ((android_version_major >= 4 && android_version_minor >= 2) || 
+      (android_version_major >= 5)) {
+    deps += [ "../libsync:libsync" ]
+  }
+  
+  # Add HWComposer2 support if available
+  deps += [ "../hwc2:libhwc2" ]
+  
+  # Note: hwcomposer window component not yet implemented in BUILD.gn
+  # Original Makefile.am includes: $(top_builddir)/egl/platforms/hwcomposer/libhybris-hwcomposerwindow.la
+  
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency, libglesv2_dependency ]
+  } else {
+    deps += [ libegl_dependency, libglesv2_dependency ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_glesv3 - OpenGL ES 3.0 test
+ohos_executable("test_glesv3") {
+  sources = [
+    "test_glesv3.cpp",
+    "test_common.cpp",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  include_dirs = [
+    "../common",
+    "../platforms/common",
+    "../egl/platforms/common",
+    "../egl/platforms/hwcomposer",
+    "../libsync",
+  ]
+  
+  cxxflags = [
+    "-std=gnu++11",
+    "-DUSE_HWCOMPOSER=1",
+  ]
+  
+  if (hybris_enable_mesa) {
+    cxxflags += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+  }
+  
+  # HWComposer2 support detection
+  cxxflags += [ "-DHAS_HWCOMPOSER2_HEADERS=1" ]
+  
+  libs = [ "m" ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../egl/platforms:libhybris-eglplatformcommon",
+    "../platforms:libhybris-platformcommon", 
+    "../hardware:libhardware",
+  ]
+  
+  # Add libsync for Android 4.2+ and 5.0+
+  if ((android_version_major >= 4 && android_version_minor >= 2) || 
+      (android_version_major >= 5)) {
+    deps += [ "../libsync:libsync" ]
+  }
+  
+  # Add HWComposer2 support if available
+  deps += [ "../hwc2:libhwc2" ]
+  
+  # Note: hwcomposer window component not yet implemented in BUILD.gn
+  # Original Makefile.am includes: $(top_builddir)/egl/platforms/hwcomposer/libhybris-hwcomposerwindow.la
+  
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency, libglesv2_dependency ]
+  } else {
+    deps += [ libegl_dependency, libglesv2_dependency ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_sf - Surface Flinger test
+ohos_executable("test_sf") {
+  sources = [
+    "test_sf.cpp",
+    "test_common.cpp",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../sf:libsf",
+  ]
+  
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency, libglesv2_dependency ]
+  } else {
+    deps += [ libegl_dependency, libglesv2_dependency ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_sensors - Sensors hardware test
+ohos_executable("test_sensors") {
+  sources = [
+    "test_sensors.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../hardware:libhardware",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_input - Input system test
+ohos_executable("test_input") {
+  sources = [
+    "test_input.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../input:libis",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_lights - Lights hardware test
+ohos_executable("test_lights") {
+  sources = [
+    "test_lights.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../hardware:libhardware",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_vibrator - Vibrator hardware test  
+ohos_executable("test_vibrator") {
+  sources = [
+    "test_vibrator.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  # Vibrator header availability
+  cflags = [ "-DHAS_VIBRATOR_HEADER=1" ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../hardware:libhardware",
+    "../vibrator:libvibrator",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_media - Media framework test
+ohos_executable("test_media") {
+  sources = [
+    "test_media.cpp",
+    "test_common.cpp",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  # HWComposer2 support detection  
+  cxxflags = [ "-DHAS_HWCOMPOSER2_HEADERS=1" ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../media:libmedia",
+    "../sf:libsf",
+  ]
+  
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency, libglesv2_dependency ]
+  } else {
+    deps += [ libegl_dependency, libglesv2_dependency ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_recorder - Media recorder test
+ohos_executable("test_recorder") {
+  sources = [
+    "test_recorder.cpp",
+    "test_common.cpp",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  # HWComposer2 support detection
+  cxxflags = [ "-DHAS_HWCOMPOSER2_HEADERS=1" ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../media:libmedia",
+    "../camera:libcamera",
+    "../input:libis",
+    "../sf:libsf",
+  ]
+  
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency, libglesv2_dependency ]
+  } else {
+    deps += [ libegl_dependency, libglesv2_dependency ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_gps - GPS hardware test
+ohos_executable("test_gps") {
+  sources = [
+    "test_gps.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  ldflags = [ "-pthread" ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../hardware:libhardware",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_opencl - OpenCL test
+ohos_executable("test_opencl") {
+  sources = [
+    "test_opencl.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../opencl:libOpenCL",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_wifi - WiFi hardware test
+ohos_executable("test_wifi") {
+  sources = [
+    "test_wifi.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  # WiFi legacy headers availability
+  cflags = [ "-DHAS_WIFI_LEGACY_HEADERS=1" ]
+  
+  deps = [
+    "../wifi:libwifi",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_hwcomposer - Hardware Composer test
+ohos_executable("test_hwcomposer") {
+  sources = [
+    "test_hwcomposer.cpp",
+    "test_common.cpp",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  include_dirs = [
+    "../common",
+    "../platforms/common",
+    "../egl/platforms/common",
+    "../egl/platforms/hwcomposer",
+    "../libsync",
+  ]
+  
+  cxxflags = [ "-DUSE_HWCOMPOSER=1" ]
+  
+  if (hybris_enable_mesa) {
+    cxxflags += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+  }
+  
+  # HWComposer2 support detection
+  cxxflags += [ "-DHAS_HWCOMPOSER2_HEADERS=1" ]
+  
+  libs = [ "m" ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../platforms:libhybris-platformcommon",
+    "../egl/platforms:libhybris-eglplatformcommon",
+    "../hardware:libhardware",
+  ]
+  
+  # Add HWComposer2 support if available
+  deps += [ "../hwc2:libhwc2" ]
+  
+  # Add libsync and hwcomposer window for Android 4.2+ and 5.0+
+  if ((android_version_major >= 4 && android_version_minor >= 2) ||
+      (android_version_major >= 5)) {
+    deps += [ "../libsync:libsync" ]
+    # Note: hwcomposer window component not yet implemented in BUILD.gn
+    # Original Makefile.am includes: $(top_builddir)/egl/platforms/hwcomposer/libhybris-hwcomposerwindow.la
+  }
+  
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency, libglesv2_dependency ]
+  } else {
+    deps += [ libegl_dependency, libglesv2_dependency ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_nfc - NFC hardware test
+ohos_executable("test_nfc") {
+  sources = [
+    "test_nfc.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  # NFC headers availability and disable unused function warnings
+  cflags = [
+    "-DHAS_LIBNFC_NXP_HEADERS=1",
+    "-Wno-error=unused-function",
+  ]
+  
+  ldflags = [ "-pthread" ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../libnfc_nxp:libnfc_nxp",
+    "../hardware:libhardware",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_dlopen - Dynamic library loading test
+ohos_executable("test_dlopen") {
+  sources = [
+    "test_dlopen.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../hardware:libhardware",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Conditional targets for Wayland-specific tests
+if (hybris_enable_wayland) {
+  # test_camera - Camera test (Wayland only)
+  ohos_executable("test_camera") {
+    sources = [
+      "test_camera.cpp",
+      "test_common.cpp",
+    ]
+    
+    configs = [
+      "../../:libhybris_config",
+      ":test_config",
+    ]
+    
+    include_dirs = [
+      "../common",
+      "../platforms/common",
+      "../egl/platforms/common",
+      "../egl/platforms/hwcomposer",
+      "../libsync",
+    ]
+    
+    cxxflags = [ "-std=gnu++11" ]
+    
+    # HWComposer2 support detection
+    cxxflags += [ "-DHAS_HWCOMPOSER2_HEADERS=1" ]
+    
+    deps = [
+      "../common:libhybris-common",
+      "../camera:libcamera",
+      "../input:libis",
+    ]
+    
+    if (hybris_enable_glvnd) {
+      external_deps = [ libegl_dependency, libglesv2_dependency ]
+    } else {
+      deps += [ libegl_dependency, libglesv2_dependency ]
+    }
+    
+    # Add Wayland dependencies if available
+    # external_deps += [ "wayland-egl", "wayland-client" ]
+    
+    install_images = [
+      "system",
+      "updater",
+    ]
+    
+    part_name = "libhybris"
+    subsystem_name = "thirdparty"
+  }
+  
+  # test_vulkan - Vulkan test (Wayland + Vulkan headers required)
+  ohos_executable("test_vulkan") {
+    sources = [
+      "test_vulkan.cpp",
+    ]
+    
+    configs = [
+      "../../:libhybris_config",
+      ":test_config",
+    ]
+    
+    deps = [
+      "../common:libhybris-common",
+      "../vulkan:libvulkan",
+    ]
+    
+    # Add Wayland dependencies if available  
+    # external_deps = [ "wayland-client" ]
+    
+    install_images = [
+      "system",
+      "updater",
+    ]
+    
+    part_name = "libhybris"
+    subsystem_name = "thirdparty"
+  }
+}
+
+# Group target for all test programs
 group("tests") {
   deps = [
+    ":test_audio",
+    ":test_egl",
     ":test_egl_configs",
+    ":test_glesv2",
+    ":test_glesv3",
+    ":test_sf",
+    ":test_sensors",
+    ":test_input",
+    ":test_lights",
+    ":test_vibrator",
+    ":test_media",
+    ":test_recorder",
+    ":test_gps",
+    ":test_opencl",
+    ":test_wifi",
+    ":test_hwcomposer",
+    ":test_nfc",
+    ":test_dlopen",
   ]
+  
+  # Add Wayland-conditional tests
+  if (hybris_enable_wayland) {
+    deps += [
+      ":test_camera",
+      ":test_vulkan",
+    ]
+  }
 }
