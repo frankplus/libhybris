@@ -83,7 +83,7 @@ extern "C" void ohosws_releaseDisplay(_EGLDisplay *dpy)
 
 extern "C" EGLNativeWindowType ohosws_CreateWindow(EGLNativeWindowType win, _EGLDisplay *display)
 {
-    TRACE("ohosws_CreateWindow(win=%p, display=%p)", win, display);
+    TRACE("ohosws_CreateWindow(win=%lx, display=%p)", win, display);
     
     // If win is null, we can't create a window
     if (!win) {
@@ -92,7 +92,7 @@ extern "C" EGLNativeWindowType ohosws_CreateWindow(EGLNativeWindowType win, _EGL
     }
     
     // Cast the input to OpenHarmony NativeWindow
-    NativeWindow *nativeWindow = static_cast<NativeWindow *>(win);
+    NativeWindow *nativeWindow = reinterpret_cast<NativeWindow *>(win);
     
     // Create our wrapper window
     OhosNativeWindow *window = new OhosNativeWindow(nativeWindow);
@@ -110,19 +110,19 @@ extern "C" EGLNativeWindowType ohosws_CreateWindow(EGLNativeWindowType win, _EGL
     }
     
     TRACE("Created OpenHarmony window: %p", window);
-    return (EGLNativeWindowType) static_cast<struct ANativeWindow *>(window);
+    return reinterpret_cast<EGLNativeWindowType>(static_cast<struct ANativeWindow *>(window));
 }
 
 extern "C" void ohosws_DestroyWindow(EGLNativeWindowType win)
 {
-    TRACE("ohosws_DestroyWindow(win=%p)", win);
+    TRACE("ohosws_DestroyWindow(win=%lx)", win);
     
     if (!win) {
         HYBRIS_ERROR("Cannot destroy null window");
         return;
     }
     
-    OhosNativeWindow *window = static_cast<OhosNativeWindow *>((struct ANativeWindow *)win);
+    OhosNativeWindow *window = reinterpret_cast<OhosNativeWindow *>(win);
     
     // Remove from tracking list
     {

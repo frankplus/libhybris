@@ -27,11 +27,9 @@ config("test_config") {
 if (hybris_enable_glvnd) {
   # When GLVND is enabled, link with system EGL/GLES
   libegl_dependency = "EGL"
-  libglesv2_dependency = "GLESv2"
 } else {
   # Link with libhybris EGL/GLES
   libegl_dependency = "../egl:libEGL"
-  libglesv2_dependency = "../glesv2:libGLESv2"
 }
 
 # test_egl - Basic EGL test

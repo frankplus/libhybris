@@ -417,6 +417,79 @@ int OhosNativeWindow::postBuffer(ANativeWindowBuffer* buffer)
     return queueBuffer((BaseNativeWindowBuffer*)buffer, -1);
 }
 
+int OhosNativeWindow::lockBuffer(BaseNativeWindowBuffer* buffer)
+{
+    TRACE("OhosNativeWindow::lockBuffer(buffer=%p)", buffer);
+    // Lock buffer operation is deprecated in modern Android
+    // Return success for compatibility
+    return 0;
+}
+
+int OhosNativeWindow::setSwapInterval(int interval)
+{
+    TRACE("OhosNativeWindow::setSwapInterval(interval=%d)", interval);
+    // OpenHarmony doesn't directly support swap interval setting
+    // Return success for compatibility
+    return 0;
+}
+
+unsigned int OhosNativeWindow::type() const
+{
+    return NATIVE_WINDOW_TYPE_OHOS;
+}
+
+unsigned int OhosNativeWindow::width() const
+{
+    return m_width;
+}
+
+unsigned int OhosNativeWindow::height() const
+{
+    return m_height;
+}
+
+unsigned int OhosNativeWindow::format() const
+{
+    return m_format;
+}
+
+unsigned int OhosNativeWindow::defaultWidth() const
+{
+    return m_width;
+}
+
+unsigned int OhosNativeWindow::defaultHeight() const
+{
+    return m_height;
+}
+
+unsigned int OhosNativeWindow::queueLength() const
+{
+    return 0; // OpenHarmony doesn't queue to window composer
+}
+
+unsigned int OhosNativeWindow::transformHint() const
+{
+    return m_transform;
+}
+
+unsigned int OhosNativeWindow::getUsage() const
+{
+    return m_usage;
+}
+
+int OhosNativeWindow::setBuffersFormat(int format)
+{
+    TRACE("OhosNativeWindow::setBuffersFormat(format=%d)", format);
+    return setBufferGeometry(m_width, m_height, format);
+}
+
+int OhosNativeWindow::setBuffersDimensions(int width, int height)
+{
+    TRACE("OhosNativeWindow::setBuffersDimensions(width=%d, height=%d)", width, height);
+    return setBufferGeometry(width, height, m_format);
+}
+
 // Factory function
 ANativeWindow* createOhosNativeWindow(NativeWindow *nativeWindow)
 {

@@ -22,11 +22,12 @@
 #include <hardware/gralloc.h>
 #include "eglnativewindowbase.h"
 #include "nativewindowbase.h"
-#include <ui/Region.h>
 #include <memory>
+#include <mutex>
+#include <vector>
 
-// OpenHarmony includes - mapped to Android equivalents for compatibility
-#include <display_type.h>
+// OpenHarmony includes
+// #include <display_type.h>
 #include <window.h>
 
 class OhosNativeWindow : public BaseNativeWindow
@@ -47,14 +48,29 @@ protected:
     int dequeueBuffer(BaseNativeWindowBuffer** buffer, int* fenceFd) override;
     int queueBuffer(BaseNativeWindowBuffer* buffer, int fenceFd) override;
     int cancelBuffer(BaseNativeWindowBuffer* buffer, int fenceFd) override;
+    int lockBuffer(BaseNativeWindowBuffer* buffer) override;
+    int setSwapInterval(int interval) override;
+    
+    // Window properties
+    unsigned int type() const override;
+    unsigned int width() const override;
+    unsigned int height() const override;
+    unsigned int format() const override;
+    unsigned int defaultWidth() const override;
+    unsigned int defaultHeight() const override;
+    unsigned int queueLength() const override;
+    unsigned int transformHint() const override;
+    unsigned int getUsage() const override;
     
     // Query operations  
-    int query(int what, int* value) const override;
-    int perform(int operation, va_list args) override;
+    int query(int what, int* value) const;
+    int perform(int operation, va_list args);
 
     // Buffer management
-    int setUsage(uint64_t usage);
-    int setBufferCount(int bufferCount);
+    int setUsage(uint64_t usage) override;
+    int setBufferCount(int bufferCount) override;
+    int setBuffersFormat(int format) override;
+    int setBuffersDimensions(int width, int height) override;
     int setBufferGeometry(int width, int height, int format);
     int setScalingMode(int mode);
     int setTransform(int transform);
