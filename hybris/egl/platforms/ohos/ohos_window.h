@@ -27,7 +27,7 @@
 #include <vector>
 
 // OpenHarmony includes
-// #include <display_type.h>
+#include <display_type.h>
 #include <window.h>
 
 class OhosNativeWindow : public BaseNativeWindow

@@ -164,6 +164,7 @@ group("libhybris") {
     "hybris/egl:libEGL",
     "hybris/glesv1:libGLESv1_CM", 
     "hybris/glesv2:libGLESv2",
+    "hybris/egl/platforms:platforms",
     # "hybris/platforms:libhybris-platformcommon",
     # "hybris/camera:libcamera",
     # "hybris/vibrator:libvibrator",

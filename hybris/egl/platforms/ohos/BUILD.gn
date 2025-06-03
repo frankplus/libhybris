@@ -28,8 +28,8 @@ ohos_shared_library("eglplatform_ohos") {
     "../../../common",
     "../..",
     "../common",
-    # "//drivers/peripheral/display/interfaces/include",
-    # "//drivers/peripheral/base",
+    "//drivers/peripheral/display/interfaces/include",
+    "//drivers/peripheral/base",
     "//foundation/graphic/graphic_surface/interfaces/inner_api/surface",
     "//foundation/graphic/graphic_surface/interfaces/inner_api/utils",
   ]

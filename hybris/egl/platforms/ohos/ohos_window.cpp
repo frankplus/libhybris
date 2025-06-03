@@ -36,7 +36,7 @@ extern "C" {
 #include <hybris/gralloc/gralloc.h>
 
 OhosNativeWindow::OhosNativeWindow(NativeWindow *nativeWindow)
-    : BaseNativeWindow(NATIVE_WINDOW_TYPE_OHOS)
+    : BaseNativeWindow()
     , m_nativeWindow(nativeWindow)
     , m_usage(0)
     , m_bufferCount(3) // Default to triple buffering
