@@ -41,11 +41,11 @@ int main(int argc, char **argv)
 	EGLContext context;
 
 	EGLBoolean rv;
-	PFNEGLHYBRISCREATENATIVEBUFFERPROC eglHybrisCreateNativeBuffer;
-	PFNEGLHYBRISLOCKNATIVEBUFFERPROC eglHybrisLockNativeBuffer;
-	PFNEGLHYBRISUNLOCKNATIVEBUFFERPROC eglHybrisUnlockNativeBuffer;
-	PFNEGLHYBRISRELEASENATIVEBUFFERPROC eglHybrisReleaseNativeBuffer;
-	PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;
+	PFNEGLHYBRISCREATENATIVEBUFFERPROC eglHybrisCreateNativeBuffer = NULL;
+	PFNEGLHYBRISLOCKNATIVEBUFFERPROC eglHybrisLockNativeBuffer = NULL;
+	PFNEGLHYBRISUNLOCKNATIVEBUFFERPROC eglHybrisUnlockNativeBuffer = NULL;
+	PFNEGLHYBRISRELEASENATIVEBUFFERPROC eglHybrisReleaseNativeBuffer = NULL;
+	PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR = NULL;
 	PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR;
 
 	display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -75,9 +75,9 @@ int main(int argc, char **argv)
 		printf("Found EGL_HYBRIS_native_buffer\n");
 		assert((eglHybrisCreateNativeBuffer = (PFNEGLHYBRISCREATENATIVEBUFFERPROC) eglGetProcAddress("eglHybrisCreateNativeBuffer")) != NULL);
 		printf("Found eglHybrisCreateNativeBuffer\n");
-		EGLClientBuffer buf;
-		EGLint stride;
-		void *loc;
+		EGLClientBuffer buf=NULL;
+		EGLint stride=0;
+		void *loc=NULL;
 		assert(eglHybrisCreateNativeBuffer(320, 480, HYBRIS_USAGE_SW_READ_RARELY|HYBRIS_USAGE_SW_WRITE_RARELY|HYBRIS_USAGE_HW_TEXTURE, HYBRIS_PIXEL_FORMAT_RGBA_8888, &stride, &buf) == EGL_TRUE);
 		printf("Stride is %i\n", stride);
 		assert((eglHybrisLockNativeBuffer = (PFNEGLHYBRISLOCKNATIVEBUFFERPROC) eglGetProcAddress("eglHybrisLockNativeBuffer")) != NULL);
