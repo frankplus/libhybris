@@ -19,7 +19,8 @@
         "ram": "",
         "deps": {
             "components": [
-                "c_utils"
+                "c_utils",
+                "graphic_surface"
             ],
             "third_party": []
         },

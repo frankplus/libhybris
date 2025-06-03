@@ -130,25 +130,27 @@ int OhosNativeWindow::dequeueBuffer(BaseNativeWindowBuffer** buffer, int* fenceF
         return -EINVAL;
     }
     
-    ANativeWindowBuffer* nativeBuffer = nullptr;
+    OHNativeWindowBuffer* ohBuffer = nullptr;
     int fence = -1;
     
     // Request buffer from OpenHarmony native window
-    int result = NativeWindowRequestBuffer(m_nativeWindow, &nativeBuffer, &fence);
+    int result = NativeWindowRequestBuffer(m_nativeWindow, &ohBuffer, &fence);
     if (result != 0) {
         HYBRIS_ERROR("Failed to request buffer from native window: %d", result);
         return result;
     }
     
-    if (!nativeBuffer) {
+    if (!ohBuffer) {
         HYBRIS_ERROR("Received null buffer from native window");
         return -EINVAL;
     }
     
-    *buffer = (BaseNativeWindowBuffer*)nativeBuffer;
+    // Cast OHNativeWindowBuffer to BaseNativeWindowBuffer
+    // This works because both are essentially buffer wrappers
+    *buffer = reinterpret_cast<BaseNativeWindowBuffer*>(ohBuffer);
     *fenceFd = fence;
     
-    TRACE("OhosNativeWindow::dequeueBuffer() = %p, fence=%d", nativeBuffer, fence);
+    TRACE("OhosNativeWindow::dequeueBuffer() = %p, fence=%d", ohBuffer, fence);
     return 0;
 }
 
@@ -161,15 +163,22 @@ int OhosNativeWindow::queueBuffer(BaseNativeWindowBuffer* buffer, int fenceFd)
         return -EINVAL;
     }
     
-    ANativeWindowBuffer* nativeBuffer = (ANativeWindowBuffer*)buffer;
+    // Cast BaseNativeWindowBuffer back to OHNativeWindowBuffer for OpenHarmony API
+    OHNativeWindowBuffer* ohBuffer = reinterpret_cast<OHNativeWindowBuffer*>(buffer);
     
-    // Create dirty region - for now, mark entire buffer as dirty
-    struct Region dirty;
+    // Create dirty region - convert Android rect to OpenHarmony Region
+    Region dirty;
+    Region::Rect ohRect;
+    ohRect.x = m_crop.left;
+    ohRect.y = m_crop.top;
+    ohRect.w = static_cast<uint32_t>(m_crop.right - m_crop.left);
+    ohRect.h = static_cast<uint32_t>(m_crop.bottom - m_crop.top);
+    
     dirty.rectNumber = 1;
-    dirty.rects = &m_crop;
+    dirty.rects = &ohRect;
     
     // Queue the buffer to the OpenHarmony native window
-    int result = NativeWindowFlushBuffer(m_nativeWindow, nativeBuffer, fenceFd, dirty);
+    int result = NativeWindowFlushBuffer(m_nativeWindow, ohBuffer, fenceFd, dirty);
     if (result != 0) {
         HYBRIS_ERROR("Failed to flush buffer to native window: %d", result);
     }
@@ -186,10 +195,11 @@ int OhosNativeWindow::cancelBuffer(BaseNativeWindowBuffer* buffer, int fenceFd)
         return -EINVAL;
     }
     
-    ANativeWindowBuffer* nativeBuffer = (ANativeWindowBuffer*)buffer;
+    // Cast BaseNativeWindowBuffer back to OHNativeWindowBuffer for OpenHarmony API
+    OHNativeWindowBuffer* ohBuffer = reinterpret_cast<OHNativeWindowBuffer*>(buffer);
     
     // Cancel the buffer in the OpenHarmony native window
-    int result = NativeWindowCancelBuffer(m_nativeWindow, nativeBuffer);
+    int result = NativeWindowCancelBuffer(m_nativeWindow, ohBuffer);
     if (result != 0) {
         HYBRIS_ERROR("Failed to cancel buffer in native window: %d", result);
     }

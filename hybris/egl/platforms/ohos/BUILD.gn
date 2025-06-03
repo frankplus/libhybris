@@ -59,6 +59,7 @@ ohos_shared_library("eglplatform_ohos") {
   ]
   
   external_deps = [
+    "graphic_surface:surface",
   ]
   
   # Module flags to match autotools behavior
