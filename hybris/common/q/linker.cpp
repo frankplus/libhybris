@@ -114,21 +114,21 @@ static const char* const kLdGeneratedConfigFilePath = "/linkerconfig/ld.config.t
 #endif
 
 #if defined(__LP64__)
-static const char* const kSystemLibDir        = "/system/lib64";
-static const char* const kOdmLibDir           = "/odm/lib64";
-static const char* const kVendorLibDir        = "/vendor/lib64";
-static const char* const kAsanSystemLibDir    = "/data/asan/system/lib64";
-static const char* const kAsanOdmLibDir       = "/data/asan/odm/lib64";
-static const char* const kAsanVendorLibDir    = "/data/asan/vendor/lib64";
-static const char* const kRuntimeApexLibDir   = "/apex/com.android.runtime/lib64";
+static const char* const kSystemLibDir        = "/android/system/lib64";
+static const char* const kOdmLibDir           = "/android/odm/lib64";
+static const char* const kVendorLibDir        = "/android/vendor/lib64";
+static const char* const kAsanSystemLibDir    = "/android/data/asan/system/lib64";
+static const char* const kAsanOdmLibDir       = "/android/data/asan/odm/lib64";
+static const char* const kAsanVendorLibDir    = "/android/data/asan/vendor/lib64";
+static const char* const kRuntimeApexLibDir   = "/android/apex/com.android.runtime/lib64";
 #else
-static const char* const kSystemLibDir        = "/system/lib";
-static const char* const kOdmLibDir           = "/odm/lib";
-static const char* const kVendorLibDir        = "/vendor/lib";
-static const char* const kAsanSystemLibDir    = "/data/asan/system/lib";
-static const char* const kAsanOdmLibDir       = "/data/asan/odm/lib";
-static const char* const kAsanVendorLibDir    = "/data/asan/vendor/lib";
-static const char* const kRuntimeApexLibDir   = "/apex/com.android.runtime/lib";
+static const char* const kSystemLibDir        = "/android/system/lib";
+static const char* const kOdmLibDir           = "/android/odm/lib";
+static const char* const kVendorLibDir        = "/android/vendor/lib";
+static const char* const kAsanSystemLibDir    = "/android/data/asan/system/lib";
+static const char* const kAsanOdmLibDir       = "/android/data/asan/odm/lib";
+static const char* const kAsanVendorLibDir    = "/android/data/asan/vendor/lib";
+static const char* const kRuntimeApexLibDir   = "/android/apex/com.android.runtime/lib";
 #endif
 
 static const char* const kAsanLibDirPrefix = "/data/asan";

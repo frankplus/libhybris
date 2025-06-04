@@ -3693,7 +3693,7 @@ static void __hybris_linker_init()
     if (user_linker_dir)
         linker_dir = user_linker_dir;
 
-    snprintf(path, PATH_MAX, "%s/%s.z.so", linker_dir, name);
+    snprintf(path, PATH_MAX, "%s/lib%s.z.so", linker_dir, name);
 
     LOGD("Loading linker from %s..", path);
 
@@ -3709,7 +3709,9 @@ static void __hybris_linker_init()
     _android_dlvsym = dlsym(linker_handle, "android_dlvsym");
     _android_dladdr = dlsym(linker_handle, "android_dladdr");
     _android_dlclose = dlsym(linker_handle, "android_dlclose");
+#if WANT_ARCH_ARM
     _android_dl_unwind_find_exidx = dlsym(linker_handle, "android_dl_unwind_find_exidx");
+#endif
     _android_dl_iterate_phdr = dlsym(linker_handle, "android_dl_iterate_phdr");
     _android_get_LD_LIBRARY_PATH = dlsym(linker_handle, "android_get_LD_LIBRARY_PATH");
     _android_update_LD_LIBRARY_PATH = dlsym(linker_handle, "android_update_LD_LIBRARY_PATH");

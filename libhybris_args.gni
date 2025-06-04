@@ -41,7 +41,7 @@ declare_args() {
 
 # Default library paths for Android libraries
 if (hybris_arch == "arm" || hybris_arch == "x86") {
-  hybris_default_ld_library_path = "/vendor/lib:/system/lib:/odm/lib"
+  hybris_default_ld_library_path = "/android/vendor/lib:/android/system/lib:/android/odm/lib"
 } else {
-  hybris_default_ld_library_path = "/vendor/lib64:/system/lib64:/odm/lib64"
+  hybris_default_ld_library_path = "/android/vendor/lib64:/android/system/lib64:/android/odm/lib64"
 }

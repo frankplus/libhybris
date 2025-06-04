@@ -113,12 +113,12 @@ ohos_shared_library("libEGL") {
   configs += [ "../../:libhybris_config" ]
   
   cflags = [
-    "-DPKGLIBDIR=\"/system/lib/libhybris/\"",
+    "-DPKGLIBDIR=\"/system/lib64/libhybris\"",
     "-DDEFAULT_EGL_PLATFORM=\"${hybris_default_egl_platform}\"",
   ]
   
   cflags_cc = [
-    "-DPKGLIBDIR=\"/system/lib/libhybris/\"",
+    "-DPKGLIBDIR=\"/system/lib64/libhybris\"",
     "-DDEFAULT_EGL_PLATFORM=\"${hybris_default_egl_platform}\"",
   ]
   
