@@ -68,6 +68,7 @@
 #include <sys/uio.h>
 
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <libgen.h>
 #include <mntent.h>
 
@@ -2360,36 +2361,100 @@ struct open_redirect open_redirects[] = {
     { "/dev/log/radio", "/dev/alog/radio" },
     { "/dev/log/system", "/dev/alog/system" },
     { "/dev/log/events", "/dev/alog/events" },
+    { "/vendor/lib64/egl", "/android/vendor/lib64/egl" },
+    { "/system/lib64/egl", "/android/system/lib64/egl" },
+    { "/vendor/lib/egl", "/android/vendor/lib/egl" },
+    { "/system/lib/egl", "/android/system/lib/egl" },
     { NULL, NULL }
 };
+
+/* Helper function to redirect paths based on open_redirects table */
+static const char* redirect_path(const char *pathname)
+{
+    if (pathname != NULL) {
+        struct open_redirect *entry = &open_redirects[0];
+        while (entry->from != NULL) {
+            if (strncmp(pathname, entry->from, strlen(entry->from)) == 0) {
+                static char redirected_path[PATH_MAX];
+                snprintf(redirected_path, sizeof(redirected_path), "%s%s", 
+                        entry->to, pathname + strlen(entry->from));
+                return redirected_path;
+            }
+            entry++;
+        }
+    }
+    return pathname;
+}
 
 int _hybris_hook_open(const char *pathname, int flags, ...)
 {
     va_list ap;
     mode_t mode = 0;
-    const char *target_path = pathname;
+    const char *target_path = redirect_path(pathname);
 
-    TRACE_HOOK("pathname '%s' flags %d", pathname, flags);
-
-    if (pathname != NULL) {
-            struct open_redirect *entry = &open_redirects[0];
-            while (entry->from != NULL) {
-                    if (strcmp(pathname, entry->from) == 0) {
-                            target_path = entry->to;
-                            break;
-                    }
-                    entry++;
-            }
-    }
+    TRACE_HOOK("pathname '%s' -> '%s' flags %d", pathname, target_path, flags);
 
     if (flags & O_CREAT) {
-            va_start(ap, flags);
-            mode = va_arg(ap, mode_t);
-            va_end(ap);
+        va_start(ap, flags);
+        mode = va_arg(ap, mode_t);
+        va_end(ap);
     }
 
     return open(target_path, flags, mode);
 }
+
+int _hybris_hook_openat(int dirfd, const char *pathname, int flags, ...)
+{
+    va_list ap;
+    mode_t mode = 0;
+    const char *target_path = redirect_path(pathname);
+
+    TRACE_HOOK("dirfd %d pathname '%s' -> '%s' flags %d", dirfd, pathname, target_path, flags);
+
+    if (flags & O_CREAT) {
+        va_start(ap, flags);
+        mode = va_arg(ap, mode_t);
+        va_end(ap);
+    }
+
+    return openat(dirfd, target_path, flags, mode);
+}
+
+int _hybris_hook_access(const char *pathname, int mode)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("pathname '%s' -> '%s' mode %d", pathname, target_path, mode);
+    return access(target_path, mode);
+}
+
+int _hybris_hook_stat(const char *pathname, struct stat *statbuf)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("pathname '%s' -> '%s'", pathname, target_path);
+    return stat(target_path, statbuf);
+}
+
+int _hybris_hook_lstat(const char *pathname, struct stat *statbuf)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("pathname '%s' -> '%s'", pathname, target_path);
+    return lstat(target_path, statbuf);
+}
+
+int _hybris_hook_faccessat(int dirfd, const char *pathname, int mode, int flags)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("dirfd %d pathname '%s' -> '%s' mode %d flags %d", dirfd, pathname, target_path, mode, flags);
+    return faccessat(dirfd, target_path, mode, flags);
+}
+
+int _hybris_hook_fstatat(int dirfd, const char *pathname, struct stat *statbuf, int flags)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("dirfd %d pathname '%s' -> '%s' flags %d", dirfd, pathname, target_path, flags);
+    return fstatat(dirfd, target_path, statbuf, flags);
+}
+
 
 #ifdef __GLIBC__
 /**
@@ -3253,6 +3318,7 @@ static struct _hook hooks_common[] = {
     HOOK_INDIRECT(versionsort),
     /* fcntl.h */
     HOOK_INDIRECT(open),
+    HOOK_INDIRECT(openat),
     HOOK_INDIRECT(__get_tls_hooks),
     HOOK_DIRECT_NO_DEBUG(sscanf),
     HOOK_DIRECT_NO_DEBUG(scanf),
@@ -3275,7 +3341,12 @@ static struct _hook hooks_common[] = {
     HOOK_DIRECT_NO_DEBUG(writev),
 #endif
     /* unistd.h */
-    HOOK_DIRECT_NO_DEBUG(access),
+    HOOK_INDIRECT(access),
+    /* sys/stat.h */
+    HOOK_INDIRECT(stat),
+    HOOK_INDIRECT(lstat),
+    HOOK_INDIRECT(faccessat),
+    HOOK_INDIRECT(fstatat),
     /* grp.h */
     HOOK_DIRECT_NO_DEBUG(getgrgid),
     /* sys/prctl.h */

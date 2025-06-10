@@ -179,8 +179,8 @@ group("libhybris") {
     # "hybris/libnfc_ndef_nxp:libnfc_ndef_nxp",
     # "hybris/opencl:libOpenCL",
     # "hybris/vulkan:libvulkan",
-    # "hybris/utils:getprop",
-    # "hybris/utils:setprop",
+    "hybris/utils:getprop",
+    "hybris/utils:setprop",
     "hybris/tests:tests",
   ]
   
