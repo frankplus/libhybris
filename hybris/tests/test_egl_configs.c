@@ -96,6 +96,8 @@ main(int argc, char *argv[])
     display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     TEST_ASSERT(display != EGL_NO_DISPLAY);
 
+    TEST_LOG("EGL Display: %p\n", display);
+
     result = eglInitialize(display, &major, &minor);
     TEST_ASSERT(result == EGL_TRUE);
 

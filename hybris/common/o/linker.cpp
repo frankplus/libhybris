@@ -1143,6 +1143,30 @@ static int open_library(android_namespace_t* ns,
       }
     }
 
+    // If the direct path failed and it's a standard Android path without /android prefix,
+    // try with /android prefix as fallback for OpenHarmony environment
+    if (fd == -1 && name[0] == '/' && strncmp(name, "/android/", 9) != 0) {
+      // Check if this is a system, vendor, or odm path that should be prefixed
+      if (strncmp(name, "/system/", 8) == 0 ||
+          strncmp(name, "/vendor/", 8) == 0 ||
+          strncmp(name, "/odm/", 5) == 0 ||
+          strncmp(name, "/apex/", 6) == 0) {
+        char prefixed_path[512];
+        int n = snprintf(prefixed_path, sizeof(prefixed_path), "/android%s", name);
+        if (n > 0 && n < static_cast<int>(sizeof(prefixed_path))) {
+          TRACE("[ trying fallback path %s for %s ]", prefixed_path, name);
+          fd = TEMP_FAILURE_RETRY(open(prefixed_path, O_RDONLY | O_CLOEXEC));
+          if (fd != -1) {
+            *file_offset = 0;
+            if (!realpath_fd(fd, realpath)) {
+              PRINT("warning: unable to get realpath for the library \"%s\". Will use given path.", prefixed_path);
+              *realpath = prefixed_path;
+            }
+          }
+        }
+      }
+    }
+
     return fd;
   }
 

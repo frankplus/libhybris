@@ -30,7 +30,7 @@ FILE *hybris_logging_target = NULL;
 pthread_mutex_t hybris_logging_mutex;
 
 static enum hybris_log_level
-hybris_minimum_log_level = HYBRIS_LOG_WARN;
+hybris_minimum_log_level = HYBRIS_LOG_DEBUG;
 
 static enum hybris_log_format _hybris_logging_format = HYBRIS_LOG_FORMAT_NORMAL;
 

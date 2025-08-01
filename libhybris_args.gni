@@ -36,7 +36,7 @@ declare_args() {
   hybris_arch = "arm64"
   
   # Default EGL platform
-  hybris_default_egl_platform = "null"
+  hybris_default_egl_platform = "ohos"
 }
 
 # Default library paths for Android libraries
