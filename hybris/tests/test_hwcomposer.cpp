@@ -140,7 +140,11 @@ int main(int argc, char **argv)
 	assert(eglGetError() == EGL_SUCCESS);
 	assert(context != EGL_NO_CONTEXT);
 
-	assert(eglMakeCurrent((EGLDisplay) display, surface, surface, context) == EGL_TRUE);
+	/* eglMakeCurrent must be called explicitly — not via assert — because the
+	 * OHOS release build defines NDEBUG, which silently elides assert expressions
+	 * and would leave no current context, causing all subsequent GL calls to fail. */
+	EGLBoolean mc = eglMakeCurrent((EGLDisplay) display, surface, surface, context);
+	assert(mc == EGL_TRUE);
 
 	/* Use eglGetProcAddress to get GL functions directly from the vendor EGL,
 	 * bypassing the libGLESv2.z.so dispatch layer which has bionic TLS issues
