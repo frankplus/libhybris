@@ -2925,11 +2925,16 @@ static void _hybris_hook___fpurge(FILE *stream)
     __fpurge(_get_actual_fp(stream));
 }
 
+/* Forward declaration for _hybris_remap_android_path (defined near android_dlopen_ext hook) */
+static const char* _hybris_remap_android_path(const char* filename, char* buf, size_t bufsz);
+
 static void *_hybris_hook_dlopen(const char *filename, int flag)
 {
+    char remapped[4096];
+    filename = _hybris_remap_android_path(filename, remapped, sizeof(remapped));
     TRACE("filename %s flag %i", filename, flag);
-
-    return _android_dlopen(filename,flag);
+    void *h = _android_dlopen(filename,flag);
+    return h;
 }
 
 static void *_hybris_hook_dlsym(void *handle, const char *symbol)
@@ -3001,11 +3006,62 @@ void _hybris_hook_android_update_LD_LIBRARY_PATH(const char* ld_library_path)
     _android_update_LD_LIBRARY_PATH(ld_library_path);
 }
 
+/* Remap absolute Android paths that use /vendor/ or /system/ prefixes to the
+ * hybris convention of /android/vendor/ and /android/system/.
+ * libhidlbase constructs paths like /vendor/lib64/hw/android.hardware...
+ * but in the OHOS LXC container the Android partitions are at /android/. */
+static const char* _hybris_remap_android_path(const char* filename, char* buf, size_t bufsz)  /* NOLINT */
+{
+    static const struct { const char *from; const char *to; } remaps[] = {
+        { "/vendor/",  "/android/vendor/"  },
+        { "/system/",  "/android/system/"  },
+        { "/odm/",     "/android/odm/"     },
+        { NULL, NULL }
+    };
+    if (!filename) return filename;
+    for (int i = 0; remaps[i].from; i++) {
+        size_t flen = strlen(remaps[i].from);
+        if (strncmp(filename, remaps[i].from, flen) == 0) {
+            snprintf(buf, bufsz, "%s%s", remaps[i].to, filename + flen);
+            return buf;
+        }
+    }
+    return filename;
+}
+
 void* _hybris_hook_android_dlopen_ext(const char* filename, int flag, const void* extinfo)
 {
+    char remapped[4096];
+    filename = _hybris_remap_android_path(filename, remapped, sizeof(remapped));
     TRACE("filename %s, flag %d, extinfo %p", filename, flag, extinfo);
+    /* Use _android_dlopen instead of _android_dlopen_ext to bypass namespace
+     * permitted_path checks. The SPHAL namespace has /vendor/lib64/... in its
+     * permitted_paths, but in our OHOS container Android libs are at /android/vendor/.
+     * After path remapping the path no longer matches the namespace, causing silent
+     * failure. Bypassing the namespace is safe in our single-container context. */
+    void *h = _android_dlopen(filename, flag);
+    if (!h && extinfo) {
+        /* Fallback: try with namespace extinfo in case it's needed for linking */
+        h = _android_dlopen_ext(filename, flag, extinfo);
+    }
+    return h;
+}
 
-    return _android_dlopen_ext(filename, flag, extinfo);
+/* android_load_sphal_library is used by libhidlbase to load passthrough HAL
+ * implementation libraries (e.g. gralloc mapper, vendor EGL).
+ * It is equivalent to android_dlopen_ext with NULL extinfo for our purposes. */
+void* _hybris_hook_android_load_sphal_library(const char* filename, int rtld_flags)
+{
+    TRACE("filename %s, rtld_flags %d", filename, rtld_flags);
+    void *handle = _android_dlopen(filename, rtld_flags);
+    return handle;
+}
+
+void* _hybris_hook_android_unload_sphal_library(void* handle)
+{
+    TRACE("handle %p", handle);
+    _android_dlclose(handle);
+    return NULL;
 }
 
 void _hybris_hook_android_set_application_target_sdk_version(uint32_t target)
@@ -3355,6 +3411,8 @@ static struct _hook hooks_common[] = {
     HOOK_INDIRECT(android_get_LD_LIBRARY_PATH),
     HOOK_INDIRECT(android_update_LD_LIBRARY_PATH),
     HOOK_INDIRECT(android_dlopen_ext),
+    HOOK_INDIRECT(android_load_sphal_library),
+    HOOK_INDIRECT(android_unload_sphal_library),
     HOOK_INDIRECT(android_set_application_target_sdk_version),
     HOOK_INDIRECT(android_get_application_target_sdk_version),
     HOOK_INDIRECT(android_create_namespace),
