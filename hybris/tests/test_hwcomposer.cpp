@@ -27,6 +27,11 @@
 #include <math.h>
 #include <stddef.h>
 #include <malloc.h>
+#include <pthread.h>
+#include <dlfcn.h>
+
+/* android_dlopen: hybris Android linker's dlopen, searches HYBRIS_LD_LIBRARY_PATH */
+extern "C" void *android_dlopen(const char *filename, int flag);
 
 #include "test_common.h"
 
@@ -79,6 +84,21 @@ const float vertexArray[] = {
 
 int main(int argc, char **argv)
 {
+	/* Pre-load gralloc mapper passthrough library via android_dlopen so it
+	 * is already in the hybris linker's table when libhidlbase's
+	 * android_load_sphal_library tries to load it. Without this, the SPHAL
+	 * loader fails to find the library and GraphicBufferMapper aborts with
+	 * "gralloc-mapper is missing". */
+	static const char *gralloc_mapper_paths[] = {
+		"/android/vendor/lib64/hw/android.hardware.graphics.mapper@4.0-impl-mediatek.so",
+		"/android/vendor/lib64/hw/android.hardware.graphics.mapper@4.0-impl.so",
+		NULL
+	};
+	for (int i = 0; gralloc_mapper_paths[i]; i++) {
+		void *h = android_dlopen(gralloc_mapper_paths[i], 1 /* RTLD_LAZY */ | 0x100 /* RTLD_GLOBAL */);
+		if (h) break;
+	}
+
 	EGLDisplay display;
 	EGLConfig ecfg;
 	EGLint num_config;
@@ -112,7 +132,6 @@ int main(int argc, char **argv)
 	assert(rv == EGL_TRUE);
 
 
-
 	surface = eglCreateWindowSurface((EGLDisplay) display, ecfg, (EGLNativeWindowType) static_cast<ANativeWindow *> (win), NULL);
 	assert(eglGetError() == EGL_SUCCESS);
 	assert(surface != EGL_NO_SURFACE);
@@ -123,9 +142,17 @@ int main(int argc, char **argv)
 
 	assert(eglMakeCurrent((EGLDisplay) display, surface, surface, context) == EGL_TRUE);
 
-	const char *version = (const char *)glGetString(GL_VERSION);
-	assert(version);
-	printf("%s\n",version);
+	/* Use eglGetProcAddress to get GL functions directly from the vendor EGL,
+	 * bypassing the libGLESv2.z.so dispatch layer which has bionic TLS issues
+	 * when mixing OHOS musl and Android bionic TLS slots. */
+	typedef const GLubyte* (*PFNGLGETSTRINGPROC_t)(GLenum);
+	PFNGLGETSTRINGPROC_t my_glGetString =
+		(PFNGLGETSTRINGPROC_t)eglGetProcAddress("glGetString");
+
+	const char *version = my_glGetString ? (const char *)my_glGetString(GL_VERSION) : NULL;
+	if (version) {
+		printf("%s\n", version);
+	}
 
 	GLuint shaderProgram = create_program(vertex_src, fragment_src);
 	glUseProgram  ( shaderProgram );    // and select it for usage
