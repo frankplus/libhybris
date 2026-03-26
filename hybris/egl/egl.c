@@ -41,6 +41,19 @@
 
 #include <system/window.h>
 #include "logging.h"
+#ifdef TRACE
+#undef TRACE
+#endif
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <hilog/log.h>
+#undef LOG_DOMAIN
+#undef LOG_TAG
+#define LOG_DOMAIN 0xD001400
+#define LOG_TAG "HybrisEGL"
 
 static void *egl_handle = NULL;
 static void *glesv2_handle = NULL;
@@ -83,8 +96,52 @@ static __eglMustCastToProperFunctionPointerType (*_eglGetProcAddress)(const char
 
 static void _init_androidegl()
 {
-	egl_handle = (void *) android_dlopen(getenv("LIBEGL") ? getenv("LIBEGL") : "libEGL.so", RTLD_LAZY);
-	glesv2_handle = (void *) android_dlopen(getenv("LIBGLESV2") ? getenv("LIBGLESV2") : "libGLESv2.so", RTLD_LAZY);
+	const char *libegl_path = getenv("LIBEGL") ? getenv("LIBEGL") : "libEGL.so";
+	const char *libglesv2_path = getenv("LIBGLESV2") ? getenv("LIBGLESV2") : "libGLESv2.so";
+	HILOG_INFO(LOG_CORE, "HybrisEGL: _init_androidegl LIBEGL=%{public}s", libegl_path);
+
+	/* DIAG: test OHOS musl open() to confirm /android is accessible in sandbox */
+	{
+		int diag_fd = open("/android/system/lib64/liblog.so", O_RDONLY | O_CLOEXEC);
+		if (diag_fd < 0) {
+			HILOG_ERROR(LOG_CORE, "HybrisEGL: DIAG musl open(/android/system/lib64/liblog.so) FAILED errno=%{public}d (%{public}s)",
+				errno, strerror(errno));
+		} else {
+			HILOG_INFO(LOG_CORE, "HybrisEGL: DIAG musl open(/android/system/lib64/liblog.so) OK fd=%{public}d", diag_fd);
+			close(diag_fd);
+		}
+		int diag_fd2 = open("/android/vendor/lib64/egl/libGLES_mali.so", O_RDONLY | O_CLOEXEC);
+		if (diag_fd2 < 0) {
+			HILOG_ERROR(LOG_CORE, "HybrisEGL: DIAG musl open(libGLES_mali.so) FAILED errno=%{public}d (%{public}s)",
+				errno, strerror(errno));
+		} else {
+			HILOG_INFO(LOG_CORE, "HybrisEGL: DIAG musl open(libGLES_mali.so) OK fd=%{public}d", diag_fd2);
+			close(diag_fd2);
+		}
+	}
+
+	/* Quick test: try opening a simple Android library via android_dlopen to diagnose Q linker state */
+	void *test_handle = (void *) android_dlopen("/android/system/lib64/liblog.so", RTLD_LAZY);
+	if (!test_handle) {
+		const char *test_err = android_dlerror();
+		HILOG_ERROR(LOG_CORE, "HybrisEGL: DIAG android_dlopen(liblog.so) FAILED: %{public}s", test_err ? test_err : "(null)");
+	} else {
+		HILOG_INFO(LOG_CORE, "HybrisEGL: DIAG android_dlopen(liblog.so) OK");
+		android_dlclose(test_handle);
+	}
+
+	egl_handle = (void *) android_dlopen(libegl_path, RTLD_LAZY);
+	if (!egl_handle) {
+		const char *err = android_dlerror();
+		HILOG_ERROR(LOG_CORE, "HybrisEGL: android_dlopen(%{public}s) FAILED: %{public}s", libegl_path,
+			err ? err : "(null)");
+	} else {
+		HILOG_INFO(LOG_CORE, "HybrisEGL: android_dlopen(%{public}s) OK handle=%{public}p", libegl_path, egl_handle);
+	}
+	glesv2_handle = (void *) android_dlopen(libglesv2_path, RTLD_LAZY);
+	if (!glesv2_handle) {
+		HILOG_ERROR(LOG_CORE, "HybrisEGL: android_dlopen(%{public}s) FAILED", libglesv2_path);
+	}
 }
 
 static inline void hybris_egl_initialize()
@@ -129,6 +186,13 @@ EGLint eglGetError(void)
 	 * way.
 	 */
 	HYBRIS_DLSYSM(egl, &_eglGetError, "eglGetError");
+
+	if (_eglGetError == NULL) {
+		HILOG_WARN(LOG_CORE, "HybrisEGL: eglGetError called before EGL init, returning hybris error only");
+		EGLint ourError = __eglHybrisError;
+		__eglHybrisError = EGL_SUCCESS;
+		return ourError != EGL_SUCCESS ? ourError : EGL_SUCCESS;
+	}
 
 	EGLint androidError = _eglGetError();
 
@@ -188,6 +252,10 @@ void hybris_egl_display_release_mappings(void)
 	}
 }
 
+#ifndef EGL_PLATFORM_OHOS_KHR
+#define EGL_PLATFORM_OHOS_KHR 0x34E0
+#endif
+
 static const char * _defaultEglPlatform()
 {
 	char *egl_platform;
@@ -235,6 +303,10 @@ EGLDisplay __eglHybrisGetPlatformDisplayCommon(EGLenum platform,
 			hybris_ws = "null";
 			break;
 
+		case EGL_PLATFORM_OHOS_KHR:
+			hybris_ws = "ohos";
+			break;
+
 #ifdef WANT_WAYLAND
 		case EGL_PLATFORM_WAYLAND_KHR:
 			hybris_ws = "wayland";
@@ -274,7 +346,9 @@ EGLDisplay __eglHybrisGetPlatformDisplayCommon(EGLenum platform,
 
 EGLDisplay eglGetDisplay(EGLNativeDisplayType display_id)
 {
-	return __eglHybrisGetPlatformDisplayCommon(EGL_NONE, display_id, NULL);
+	EGLDisplay dpy = __eglHybrisGetPlatformDisplayCommon(EGL_NONE, display_id, NULL);
+	HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "eglGetDisplay(%p) -> %p", (void*)display_id, (void*)dpy);
+	return dpy;
 }
 
 EGLDisplay eglGetPlatformDisplay(EGLenum platform,
@@ -285,17 +359,21 @@ EGLDisplay eglGetPlatformDisplay(EGLenum platform,
 		return EGL_NO_DISPLAY;
 	}
 
-	return __eglHybrisGetPlatformDisplayCommon(platform, display_id, attrib_list);
+	EGLDisplay dpy = __eglHybrisGetPlatformDisplayCommon(platform, display_id, attrib_list);
+	HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "eglGetPlatformDisplay(0x%x, %p) -> %p", platform, display_id, (void*)dpy);
+	return dpy;
 }
 
 EGLBoolean eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
 {
+	HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "eglInitialize(%p) enter", (void*)dpy);
 	HYBRIS_DLSYSM(egl, &_eglInitialize, "eglInitialize");
 	EGLBoolean ret = _eglInitialize(dpy, major, minor);
 	if (ret) {
 		struct _EGLDisplay *display = hybris_egl_display_get_mapping(dpy);
 		ws_eglInitialized(display);
 	}
+	HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "eglInitialize(%p) exit ret=%d", (void*)dpy, ret);
 	return ret;
 }
 
