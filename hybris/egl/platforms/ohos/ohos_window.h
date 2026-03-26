@@ -60,6 +60,7 @@ public:
 
 private:
     OHNativeWindowBuffer* m_ohBuffer;
+    buffer_handle_t m_importedHandle = nullptr;
 };
 
 class OhosNativeWindow : public BaseNativeWindow
