@@ -2070,12 +2070,16 @@ static struct bionic_dirent *_hybris_hook_readdir(DIR *dirp)
     result.d_off = real_result->d_off;
     result.d_reclen = real_result->d_reclen;
     result.d_type = real_result->d_type;
-    memcpy(result.d_name, real_result->d_name, sizeof(result.d_name));
-
-    // Make sure the string is zero-terminated, even if cut off (which
-    // shouldn't happen, as both bionic and glibc have d_name defined
-    // as fixed array of 256 chars)
-    result.d_name[sizeof(result.d_name)-1] = '\0';
+    /* Copy only the actual filename length to avoid reading past the end of
+     * MUSL's internal DIR buffer.  readdir() returns a pointer into the
+     * getdents64 result buffer; that buffer ends at a page boundary, and
+     * blindly copying sizeof(result.d_name)==256 bytes from the last entry
+     * in the buffer crosses into the next (unmapped/protected) page and
+     * triggers SEGV_ACCERR.  Using strnlen ensures we never read beyond
+     * the NUL terminator of the actual filename. */
+    size_t name_len = strnlen(real_result->d_name, sizeof(result.d_name) - 1);
+    memcpy(result.d_name, real_result->d_name, name_len);
+    result.d_name[name_len] = '\0';
     return &result;
 }
 
