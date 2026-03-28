@@ -57,6 +57,12 @@ public:
     ~OhosNativeWindowBuffer();
 
     OHNativeWindowBuffer* ohBuffer() const { return m_ohBuffer; }
+    buffer_handle_t importedHandle() const { return m_importedHandle; }
+
+    /* Canary to detect double-delete via the BaseNativeWindowBuffer _decRef path */
+    static constexpr uint32_t kMagicLive = 0xB00FC0DE;
+    static constexpr uint32_t kMagicDead = 0xDEADBEEF;
+    uint32_t magic = kMagicLive;
 
 private:
     OHNativeWindowBuffer* m_ohBuffer;
@@ -130,7 +136,10 @@ private:
     android_native_rect_t m_crop;
 
     void initializeDefaults();
-    void freeBuffers();
+    void freeBuffers(const char* caller = nullptr);
+    /* Update cached geometry — called from const query() via const_cast when
+     * the underlying OHOS NativeWindow geometry was set after our construction. */
+    void updateGeometry(int w, int h);
 };
 
 // Factory function for creating OpenHarmony native windows

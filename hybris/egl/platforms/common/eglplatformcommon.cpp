@@ -234,9 +234,45 @@ extern "C" EGLBoolean eglplatformcommon_eglHybrisReleaseNativeBuffer(EGLClientBu
 
 
 
+#ifndef EGL_NATIVE_BUFFER_OHOS
+#define EGL_NATIVE_BUFFER_OHOS 0x34E1
+#endif
+
+#ifndef EGL_NATIVE_BUFFER_ANDROID
+#define EGL_NATIVE_BUFFER_ANDROID 0x3140
+#endif
+
+/*
+ * Weak reference to the OHOS buffer translation function defined in
+ * ohos_window.cpp (only present when the OHOS EGL platform is linked in).
+ * When the OHOS platform is active this translates an OHNativeWindowBuffer*
+ * (what OHOS passes to eglCreateImageKHR) to its OhosNativeWindowBuffer*
+ * ANativeWindowBuffer wrapper (what Mali EGL expects for
+ * EGL_NATIVE_BUFFER_ANDROID).
+ */
+extern "C" __attribute__((weak))
+ANativeWindowBuffer* ohosws_find_anwb_for_ohbuffer(void* ohBuf);
+
 extern "C" void
 eglplatformcommon_passthroughImageKHR(EGLContext *ctx, EGLenum *target, EGLClientBuffer *buffer, const EGLint **attrib_list)
 {
+	if (*target == EGL_NATIVE_BUFFER_OHOS)
+	{
+		*target = EGL_NATIVE_BUFFER_ANDROID;
+		/*
+		 * OHOS passes a raw OHNativeWindowBuffer* as the EGLClientBuffer.
+		 * Mali EGL expects an ANativeWindowBuffer* (our OhosNativeWindowBuffer
+		 * wrapper).  Look up the wrapper in the global table populated by
+		 * OhosNativeWindow::dequeueBuffer().
+		 */
+		if (ohosws_find_anwb_for_ohbuffer) {
+			ANativeWindowBuffer* anwb = ohosws_find_anwb_for_ohbuffer(*buffer);
+			if (anwb) {
+				*buffer = (EGLClientBuffer)anwb;
+			}
+		}
+	}
+
 #ifdef WANT_WAYLAND
 	static int debugenvchecked = 0;
 	if (*target == EGL_WAYLAND_BUFFER_WL)
