@@ -3153,6 +3153,129 @@ int _hybris_hook_android_fdsan_close_with_tag(int fd, uint64_t tag)
     return close(fd);
 }
 
+/*
+ * Android 13 compatibility: no-op android::CallStack hooks.
+ *
+ * The MTK gralloc mapper (arm::mapper::common::get) calls CallStack for debug
+ * backtraces. Android 13's libunwindstack crashes with SIGBUS when unwinding
+ * MUSL stack frames (alignment mismatch in MapInfo::~MapInfo).
+ *
+ * These hooks intercept the cross-DSO PLT calls from the mapper to
+ * libutilscallstack.so, making them no-ops. This eliminates the need for
+ * a separate stub .so and LXC bind mount.
+ */
+static void _hybris_hook_callstack_noop(void) {}
+static void _hybris_hook_callstack_noop_2(void *self, const char *tag, int level) { (void)self; (void)tag; (void)level; }
+static void _hybris_hook_callstack_update(void *self, int skip, int tid) { (void)self; (void)skip; (void)tid; }
+static void _hybris_hook_callstack_log(void *self, const char *tag, int prio, const char *prefix) { (void)self; (void)tag; (void)prio; (void)prefix; }
+
+/*
+ * Android 13 bionic compatibility: __ctype_get_mb_cur_max and emulated TLS.
+ *
+ * Android 13 bionic's __ctype_get_mb_cur_max() uses __emutls_get_address
+ * internally to access g_current_locale via emulated TLS. Bionic's emutls_init
+ * calls pthread_key_create and aborts on failure — which happens in MUSL threads
+ * because bionic's TLS infrastructure is incompatible with MUSL.
+ *
+ * The call from libc++.so → bionic libc.so's __ctype_get_mb_cur_max() crosses
+ * DSO boundaries (through PLT), so we can hook it. Returning MB_CUR_MAX (4 for
+ * UTF-8) from MUSL bypasses bionic's emutls entirely. This is the primary fix.
+ *
+ * The __emutls_get_address hook below is a secondary safety net for any other
+ * code path that might trigger bionic's emutls from a hookable call site.
+ */
+
+static size_t _hybris_hook___ctype_get_mb_cur_max(void)
+{
+    /* MB_CUR_MAX for UTF-8 locales (the only locale Android/OHOS uses) */
+    return 4;
+}
+
+/*
+ * MUSL-compatible __emutls_get_address implementation (secondary safety net).
+ * Provides per-thread emulated TLS using pthread_key_t instead of bionic's
+ * internal TLS structures.
+ */
+
+typedef struct __emutls_control {
+    size_t size;
+    size_t align;
+    union {
+        size_t offset;
+        void *ptr;
+    } object;
+    void *templ;
+} __emutls_control;
+
+static pthread_key_t _hybris_emutls_key;
+static pthread_once_t _hybris_emutls_once = PTHREAD_ONCE_INIT;
+static size_t _hybris_emutls_num = 0;
+static pthread_mutex_t _hybris_emutls_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+typedef struct {
+    void **data;
+    size_t size;
+} _hybris_emutls_array;
+
+static void _hybris_emutls_key_dtor(void *ptr) {
+    if (!ptr) return;
+    _hybris_emutls_array *arr = (_hybris_emutls_array *)ptr;
+    if (arr->data) {
+        for (size_t i = 0; i < arr->size; i++)
+            free(arr->data[i]);
+        free(arr->data);
+    }
+    free(arr);
+}
+
+static void _hybris_emutls_init(void) {
+    pthread_key_create(&_hybris_emutls_key, _hybris_emutls_key_dtor);
+}
+
+static void *_hybris_hook___emutls_get_address(__emutls_control *control) {
+    pthread_once(&_hybris_emutls_once, _hybris_emutls_init);
+
+    size_t index = control->object.offset;
+    if (index == 0) {
+        pthread_mutex_lock(&_hybris_emutls_mutex);
+        if (control->object.offset == 0)
+            control->object.offset = ++_hybris_emutls_num;
+        index = control->object.offset;
+        pthread_mutex_unlock(&_hybris_emutls_mutex);
+    }
+
+    _hybris_emutls_array *arr = (_hybris_emutls_array *)pthread_getspecific(_hybris_emutls_key);
+    if (!arr) {
+        arr = (_hybris_emutls_array *)calloc(1, sizeof(_hybris_emutls_array));
+        pthread_setspecific(_hybris_emutls_key, arr);
+    }
+
+    if (index > arr->size) {
+        size_t new_size = index + 16;
+        void **new_data = (void **)realloc(arr->data, new_size * sizeof(void *));
+        memset(new_data + arr->size, 0, (new_size - arr->size) * sizeof(void *));
+        arr->data = new_data;
+        arr->size = new_size;
+    }
+
+    void *ptr = arr->data[index - 1];
+    if (!ptr) {
+        size_t size = control->size;
+        size_t align = control->align;
+        if (align < sizeof(void *))
+            align = sizeof(void *);
+        ptr = calloc(1, size + align - 1);
+        uintptr_t p = (uintptr_t)ptr;
+        p = (p + align - 1) & ~(align - 1);
+        ptr = (void *)p;
+        if (control->templ)
+            memcpy(ptr, control->templ, size);
+        arr->data[index - 1] = ptr;
+    }
+
+    return ptr;
+}
+
 // old property hooks for pre-android 8 approach
 static struct _hook hooks_properties[] = {
     HOOK_INDIRECT(property_get),
@@ -3641,6 +3764,18 @@ static struct _hook hooks_p[] = {
     HOOK_INDIRECT(android_fdsan_close_with_tag),
     /* pthread.h */
     HOOK_DIRECT_NO_DEBUG(pthread_setschedprio),
+    /* Android 13 compatibility: CallStack no-ops (prevent libunwindstack SIGBUS) */
+    {"_ZN7android9CallStackC1Ev", _hybris_hook_callstack_noop, _hybris_hook_callstack_noop},
+    {"_ZN7android9CallStackC2Ev", _hybris_hook_callstack_noop, _hybris_hook_callstack_noop},
+    {"_ZN7android9CallStackC1EPKci", _hybris_hook_callstack_noop_2, _hybris_hook_callstack_noop_2},
+    {"_ZN7android9CallStackC2EPKci", _hybris_hook_callstack_noop_2, _hybris_hook_callstack_noop_2},
+    {"_ZN7android9CallStackD1Ev", _hybris_hook_callstack_noop, _hybris_hook_callstack_noop},
+    {"_ZN7android9CallStackD2Ev", _hybris_hook_callstack_noop, _hybris_hook_callstack_noop},
+    {"_ZN7android9CallStack6updateEii", _hybris_hook_callstack_update, _hybris_hook_callstack_update},
+    {"_ZNK7android9CallStack3logEPKc19android_LogPriorityS2_", _hybris_hook_callstack_log, _hybris_hook_callstack_log},
+    /* Android 13 compatibility: bionic emutls bypass */
+    HOOK_TO(__ctype_get_mb_cur_max, _hybris_hook___ctype_get_mb_cur_max),
+    HOOK_TO(__emutls_get_address, _hybris_hook___emutls_get_address),
 };
 
 static int hook_cmp(const void *a, const void *b)
