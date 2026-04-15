@@ -49,6 +49,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
 #include <hilog/log.h>
 #undef LOG_DOMAIN
 #undef LOG_TAG
@@ -60,6 +61,14 @@ static void *glesv2_handle = NULL;
 static void *_hybris_libgles1 = NULL;
 static void *_hybris_libgles2 = NULL;
 static int _egl_context_client_version = 1;
+
+/*
+ * Reader-writer lock serializing eglSwapBuffers (reader) against
+ * eglDestroySurface (writer).  Prevents the Mali driver from crashing
+ * when a concurrent eglDestroySurface frees internal surface state while
+ * another thread is mid-eglSwapBuffers on the same surface.
+ */
+static pthread_rwlock_t _surface_lifecycle_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static EGLint      (*_eglGetError)(void) = NULL;
 
@@ -460,15 +469,34 @@ HYBRIS_IMPLEMENT_FUNCTION4(egl, EGLSurface, eglCreatePixmapSurface, EGLDisplay, 
 
 EGLBoolean eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
 {
-	HYBRIS_DLSYSM(egl, &_eglDestroySurface, "eglDestroySurface");
-	EGLBoolean result = (*_eglDestroySurface)(dpy, surface);
+	EGLNativeWindowType win = 0;
+	EGLBoolean result;
 
-	/**
-         * If the surface was created via eglCreateWindowSurface, we must
-         * notify the ws about surface destruction for clean-up.
-	 **/
+	HYBRIS_DLSYSM(egl, &_eglDestroySurface, "eglDestroySurface");
+
+	/*
+	 * Take the write (exclusive) lock to ensure no eglSwapBuffers is
+	 * in-flight on another thread.  Without this, Mali's internal surface
+	 * state is freed here while a concurrent eglSwapBuffers still
+	 * references it, causing a SIGSEGV inside Mali.
+	 */
+	pthread_rwlock_wrlock(&_surface_lifecycle_lock);
+
 	if (egl_helper_has_mapping(surface)) {
-	    ws_DestroyWindow(egl_helper_pop_mapping(surface));
+		win = egl_helper_pop_mapping(surface);
+	}
+
+	result = (*_eglDestroySurface)(dpy, surface);
+
+	pthread_rwlock_unlock(&_surface_lifecycle_lock);
+
+	/*
+	 * Clean up the OhosNativeWindow outside the lock — ws_DestroyWindow
+	 * may trigger buffer teardown that doesn't need to block swaps on
+	 * other surfaces.
+	 */
+	if (win) {
+		ws_DestroyWindow(win);
 	}
 
 	return result;
@@ -540,14 +568,30 @@ EGLBoolean _my_eglSwapBuffersWithDamageEXT(EGLDisplay dpy, EGLSurface surface, E
 	HYBRIS_TRACE_BEGIN("hybris-egl", "eglSwapBuffersWithDamageEXT", "");
 	HYBRIS_DLSYSM(egl, &_eglSwapBuffers, "eglSwapBuffers");
 
+	/*
+	 * Take the read (shared) lock — multiple swaps may proceed in
+	 * parallel, but eglDestroySurface (write lock) will block until
+	 * every in-flight swap has released.
+	 */
+	pthread_rwlock_rdlock(&_surface_lifecycle_lock);
+
 	if (egl_helper_has_mapping(surface)) {
 		win = egl_helper_get_mapping(surface);
 		ws_prepareSwap(dpy, win, rects, n_rects);
 		ret = (*_eglSwapBuffers)(dpy, surface);
 		ws_finishSwap(dpy, win);
 	} else {
-		ret = (*_eglSwapBuffers)(dpy, surface);
+		/*
+		 * No mapping: surface was already destroyed by a concurrent
+		 * eglDestroySurface, or is a non-window surface (pbuffer).
+		 * Do NOT call Mali's eglSwapBuffers — the internal surface
+		 * state may already be freed, causing a NULL-pointer SIGSEGV.
+		 */
+		ret = EGL_FALSE;
 	}
+
+	pthread_rwlock_unlock(&_surface_lifecycle_lock);
+
 	HYBRIS_TRACE_END("hybris-egl", "eglSwapBuffersWithDamageEXT", "");
 	return ret;
 }

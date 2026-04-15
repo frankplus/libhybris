@@ -22,26 +22,29 @@
 
 #include <assert.h>
 #include <map>
+#include <mutex>
 
 
 /* Keep track of active EGL window surfaces */
 static std::map<EGLSurface,EGLNativeWindowType> _surface_window_map;
+static std::mutex _surface_map_mutex;
 
 
 void egl_helper_push_mapping(EGLSurface surface, EGLNativeWindowType window)
 {
-    assert(!egl_helper_has_mapping(surface));
-
+    std::lock_guard<std::mutex> lock(_surface_map_mutex);
     _surface_window_map[surface] = window;
 }
 
 int egl_helper_has_mapping(EGLSurface surface)
 {
+    std::lock_guard<std::mutex> lock(_surface_map_mutex);
     return (_surface_window_map.find(surface) != _surface_window_map.end());
 }
 
 EGLNativeWindowType egl_helper_get_mapping(EGLSurface surface)
 {
+    std::lock_guard<std::mutex> lock(_surface_map_mutex);
     std::map<EGLSurface,EGLNativeWindowType>::iterator it;
     it = _surface_window_map.find(surface);
 
@@ -53,6 +56,7 @@ EGLNativeWindowType egl_helper_get_mapping(EGLSurface surface)
 
 EGLNativeWindowType egl_helper_pop_mapping(EGLSurface surface)
 {
+    std::lock_guard<std::mutex> lock(_surface_map_mutex);
     std::map<EGLSurface,EGLNativeWindowType>::iterator it;
     it = _surface_window_map.find(surface);
 
