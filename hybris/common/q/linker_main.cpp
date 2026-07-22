@@ -741,7 +741,7 @@ static void generate_tmpsoinfo(soinfo& tmp_linker_so) {
   tmp_linker_so.phnum = 0;
   tmp_linker_so.set_linker_flag();
 
-  DEBUG("tmp_linker_so's load_bias=%p \n", tmp_linker_so.load_bias);
+  DEBUG("tmp_linker_so's load_bias=%p \n", reinterpret_cast<void*>(tmp_linker_so.load_bias));
 
   // Prelink the linker so we can access linker globals.
 //  if (!tmp_linker_so.prelink_image()) {

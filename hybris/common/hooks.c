@@ -68,6 +68,7 @@
 #include <sys/uio.h>
 
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <libgen.h>
 #include <mntent.h>
 
@@ -1600,7 +1601,11 @@ static int _hybris_hook_fgetpos(FILE *fp, bionic_fpos_t *pos)
 
     *pos = my_fpos.__pos;
 #else
-    int ret = fgetpos(_get_actual_fp(fp), pos);
+    fpos_t my_fpos;
+    int ret = fgetpos(_get_actual_fp(fp), &my_fpos);
+
+    /* musl's fpos_t is a union with __lldata as the position */
+    *pos = my_fpos.__lldata;
 #endif
 
     return ret;
@@ -1616,7 +1621,11 @@ static int _hybris_hook_fgetpos64(FILE *fp, bionic_fpos64_t *pos)
 
     *pos = my_fpos.__pos;
 #else
-    int ret = fgetpos(_get_actual_fp(fp), pos);
+    fpos_t my_fpos;
+    int ret = fgetpos(_get_actual_fp(fp), &my_fpos);
+
+    /* musl's fpos_t is a union with __lldata as the position, and fpos64_t is the same as fpos_t */
+    *pos = my_fpos.__lldata;
 #endif
 
     return ret;
@@ -1724,7 +1733,11 @@ static int _hybris_hook_fsetpos(FILE *fp, const bionic_fpos_t *pos)
 
     return fsetpos(_get_actual_fp(fp), &my_fpos);
 #else
-    return fsetpos(_get_actual_fp(fp), pos);
+    fpos_t my_fpos;
+    /* musl's fpos_t is a union with __lldata as the position */
+    my_fpos.__lldata = *pos;
+
+    return fsetpos(_get_actual_fp(fp), &my_fpos);
 #endif
 }
 
@@ -1739,7 +1752,11 @@ static int _hybris_hook_fsetpos64(FILE *fp, const bionic_fpos64_t *pos)
 
     return fsetpos64(_get_actual_fp(fp), &my_fpos);
 #else
-    return fsetpos(_get_actual_fp(fp), pos);
+    fpos_t my_fpos;
+    /* musl's fpos_t is a union with __lldata as the position, and fpos64_t is the same as fpos_t */
+    my_fpos.__lldata = *pos;
+
+    return fsetpos(_get_actual_fp(fp), &my_fpos);
 #endif
 }
 
@@ -2397,36 +2414,100 @@ struct open_redirect open_redirects[] = {
     { "/dev/log/radio", "/dev/alog/radio" },
     { "/dev/log/system", "/dev/alog/system" },
     { "/dev/log/events", "/dev/alog/events" },
+    { "/vendor/lib64/egl", "/android/vendor/lib64/egl" },
+    { "/system/lib64/egl", "/android/system/lib64/egl" },
+    { "/vendor/lib/egl", "/android/vendor/lib/egl" },
+    { "/system/lib/egl", "/android/system/lib/egl" },
     { NULL, NULL }
 };
+
+/* Helper function to redirect paths based on open_redirects table */
+static const char* redirect_path(const char *pathname)
+{
+    if (pathname != NULL) {
+        struct open_redirect *entry = &open_redirects[0];
+        while (entry->from != NULL) {
+            if (strncmp(pathname, entry->from, strlen(entry->from)) == 0) {
+                static char redirected_path[PATH_MAX];
+                snprintf(redirected_path, sizeof(redirected_path), "%s%s", 
+                        entry->to, pathname + strlen(entry->from));
+                return redirected_path;
+            }
+            entry++;
+        }
+    }
+    return pathname;
+}
 
 int _hybris_hook_open(const char *pathname, int flags, ...)
 {
     va_list ap;
     mode_t mode = 0;
-    const char *target_path = pathname;
+    const char *target_path = redirect_path(pathname);
 
-    TRACE_HOOK("pathname '%s' flags %d", pathname, flags);
-
-    if (pathname != NULL) {
-            struct open_redirect *entry = &open_redirects[0];
-            while (entry->from != NULL) {
-                    if (strcmp(pathname, entry->from) == 0) {
-                            target_path = entry->to;
-                            break;
-                    }
-                    entry++;
-            }
-    }
+    TRACE_HOOK("pathname '%s' -> '%s' flags %d", pathname, target_path, flags);
 
     if (flags & O_CREAT) {
-            va_start(ap, flags);
-            mode = va_arg(ap, mode_t);
-            va_end(ap);
+        va_start(ap, flags);
+        mode = va_arg(ap, mode_t);
+        va_end(ap);
     }
 
     return open(target_path, flags, mode);
 }
+
+int _hybris_hook_openat(int dirfd, const char *pathname, int flags, ...)
+{
+    va_list ap;
+    mode_t mode = 0;
+    const char *target_path = redirect_path(pathname);
+
+    TRACE_HOOK("dirfd %d pathname '%s' -> '%s' flags %d", dirfd, pathname, target_path, flags);
+
+    if (flags & O_CREAT) {
+        va_start(ap, flags);
+        mode = va_arg(ap, mode_t);
+        va_end(ap);
+    }
+
+    return openat(dirfd, target_path, flags, mode);
+}
+
+int _hybris_hook_access(const char *pathname, int mode)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("pathname '%s' -> '%s' mode %d", pathname, target_path, mode);
+    return access(target_path, mode);
+}
+
+int _hybris_hook_stat(const char *pathname, struct stat *statbuf)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("pathname '%s' -> '%s'", pathname, target_path);
+    return stat(target_path, statbuf);
+}
+
+int _hybris_hook_lstat(const char *pathname, struct stat *statbuf)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("pathname '%s' -> '%s'", pathname, target_path);
+    return lstat(target_path, statbuf);
+}
+
+int _hybris_hook_faccessat(int dirfd, const char *pathname, int mode, int flags)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("dirfd %d pathname '%s' -> '%s' mode %d flags %d", dirfd, pathname, target_path, mode, flags);
+    return faccessat(dirfd, target_path, mode, flags);
+}
+
+int _hybris_hook_fstatat(int dirfd, const char *pathname, struct stat *statbuf, int flags)
+{
+    const char *target_path = redirect_path(pathname);
+    TRACE_HOOK("dirfd %d pathname '%s' -> '%s' flags %d", dirfd, pathname, target_path, flags);
+    return fstatat(dirfd, target_path, statbuf, flags);
+}
+
 
 #ifdef __GLIBC__
 /**
@@ -2493,10 +2574,17 @@ static int _hybris_hook___cxa_thread_atexit(void (*dtor)(void *), void *obj,
     /* Call Glibc's implementation. Pass our symbol to prevent ourself from
      * being unloaded. */
     int ret;
+#ifdef __GLIBC__
     if ((ret = __cxa_thread_atexit(__dtor_wrapper, wrapped, &__dso_handle)) != 0) {
         free(wrapped);
         return ret;
     }
+#else
+    if ((ret = __cxa_thread_atexit(__dtor_wrapper, wrapped, (void *)&__dso_handle)) != 0) {
+        free(wrapped);
+        return ret;
+    }
+#endif
 
     /* Increase refcount of this dso_symbol. */
     __hybris_add_thread_local_dtor(dso_symbol);
@@ -2574,7 +2662,25 @@ static char* _hybris_hook__gnu_strerror_r(int errnum, char *buf, size_t buf_len)
 {
     TRACE_HOOK("errnum %d buf '%s' buf len %zu", errnum, buf, buf_len);
 
+#ifdef __GLIBC__
+    /* GNU glibc version returns char* */
     return strerror_r(errnum, buf, buf_len);
+#else
+    /* musl uses POSIX version which returns int, need to handle differently */
+    int ret = strerror_r(errnum, buf, buf_len);
+    if (ret == 0) {
+        return buf;  /* Success: return the buffer */
+    } else {
+        /* Error: fallback to strerror which is thread-safe in musl */
+        const char *error_msg = strerror(errnum);
+        if (error_msg && buf && buf_len > 0) {
+            strncpy(buf, error_msg, buf_len - 1);
+            buf[buf_len - 1] = '\0';
+            return buf;
+        }
+        return NULL;
+    }
+#endif
 }
 
 static int _hybris_hook_mprotect(void *addr, size_t len, int prot)
@@ -2846,11 +2952,11 @@ static void *_hybris_hook_dlvsym(void *handle, const char *symbol, const char* v
     return _android_dlvsym(handle,symbol,version);
 }
 
-static void* _hybris_hook_dladdr(void *addr, Dl_info *info)
+static int _hybris_hook_dladdr(void *addr, Dl_info *info)
 {
     TRACE("addr %p info %p", addr, info);
 
-    return (void *)_android_dladdr(addr, info);
+    return _android_dladdr(addr, info);
 }
 
 static int _hybris_hook_dlclose(void *handle)
@@ -3276,6 +3382,7 @@ static struct _hook hooks_common[] = {
     HOOK_INDIRECT(versionsort),
     /* fcntl.h */
     HOOK_INDIRECT(open),
+    HOOK_INDIRECT(openat),
     HOOK_INDIRECT(__get_tls_hooks),
     HOOK_DIRECT_NO_DEBUG(sscanf),
     HOOK_DIRECT_NO_DEBUG(scanf),
@@ -3298,7 +3405,12 @@ static struct _hook hooks_common[] = {
     HOOK_DIRECT_NO_DEBUG(writev),
 #endif
     /* unistd.h */
-    HOOK_DIRECT_NO_DEBUG(access),
+    HOOK_INDIRECT(access),
+    /* sys/stat.h */
+    HOOK_INDIRECT(stat),
+    HOOK_INDIRECT(lstat),
+    HOOK_INDIRECT(faccessat),
+    HOOK_INDIRECT(fstatat),
     /* grp.h */
     HOOK_DIRECT_NO_DEBUG(getgrgid),
     /* sys/prctl.h */
@@ -3721,7 +3833,7 @@ static void __hybris_linker_init()
     if (user_linker_dir)
         linker_dir = user_linker_dir;
 
-    snprintf(path, PATH_MAX, "%s/%s.so", linker_dir, name);
+    snprintf(path, PATH_MAX, "%s/lib%s.z.so", linker_dir, name);
 
     LOGD("Loading linker from %s..", path);
 
@@ -3737,7 +3849,9 @@ static void __hybris_linker_init()
     _android_dlvsym = dlsym(linker_handle, "android_dlvsym");
     _android_dladdr = dlsym(linker_handle, "android_dladdr");
     _android_dlclose = dlsym(linker_handle, "android_dlclose");
+#if WANT_ARCH_ARM
     _android_dl_unwind_find_exidx = dlsym(linker_handle, "android_dl_unwind_find_exidx");
+#endif
     _android_dl_iterate_phdr = dlsym(linker_handle, "android_dl_iterate_phdr");
     _android_get_LD_LIBRARY_PATH = dlsym(linker_handle, "android_get_LD_LIBRARY_PATH");
     _android_update_LD_LIBRARY_PATH = dlsym(linker_handle, "android_update_LD_LIBRARY_PATH");

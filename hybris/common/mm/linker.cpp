@@ -86,13 +86,13 @@ static soinfo* somain; // main process, always the one after libdl_info
 
 static const char* const kDefaultLdPaths[] = {
 #if defined(__LP64__)
-  "/vendor/lib64",
-  "/system/lib64",
-  "/odm/lib64",
+  "/android/vendor/lib64",
+  "/android/system/lib64",
+  "/android/odm/lib64",
 #else
-  "/vendor/lib",
-  "/system/lib",
-  "/odm/lib",
+  "/android/vendor/lib",
+  "/android/system/lib",
+  "/android/odm/lib",
 #endif
   nullptr
 };

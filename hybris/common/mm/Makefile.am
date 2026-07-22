@@ -39,7 +39,6 @@ mm_la_CPPFLAGS = \
 	$(ARCH_FLAGS) \
 	$(ANDROID_HEADERS_CFLAGS)
 mm_la_LDFLAGS = \
-	-lsupc++ \
 	-module \
 	-avoid-version
 
