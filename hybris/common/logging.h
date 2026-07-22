@@ -159,6 +159,9 @@ extern FILE *hybris_logging_target;
 #define HYBRIS_ERROR(message, ...) HYBRIS_ERROR_LOG(HYBRIS, message, ##__VA_ARGS__)
 
 /* for compatibility reasons */
+#ifdef TRACE
+#undef TRACE
+#endif
 #define TRACE(message, ...) HYBRIS_DEBUG_LOG(EGL, message, ##__VA_ARGS__)
 
 #endif /* HYBRIS_LOGGING_H */
