@@ -62,7 +62,7 @@ static std::mutex _nativewindows_mutex;
 
 extern "C" void ohosws_init_module(struct ws_egl_interface *egl_iface)
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_init_module enter");
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_init_module enter");
     TRACE("ohosws_init_module(egl_iface=%p)", egl_iface);
     
     /*
@@ -94,12 +94,12 @@ extern "C" void ohosws_init_module(struct ws_egl_interface *egl_iface)
     eglplatformcommon_init(egl_iface);
     
     HYBRIS_INFO("OpenHarmony EGL platform initialized");
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_init_module exit");
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_init_module exit");
 }
 
 extern "C" _EGLDisplay *ohosws_GetDisplay(EGLNativeDisplayType display)
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_GetDisplay enter: display=%p", (void*)display);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_GetDisplay enter: display=%p", (void*)display);
     HYBRIS_EGL_TRACE("ohosws_GetDisplay(display=%p)", (void*)display);
     
     // For OpenHarmony, we create a display for any non-null display parameter
@@ -108,7 +108,7 @@ extern "C" _EGLDisplay *ohosws_GetDisplay(EGLNativeDisplayType display)
     
     if (display == EGL_DEFAULT_DISPLAY || display != nullptr) {
         dpy = new _EGLDisplay;
-        HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_GetDisplay created dpy: %p", dpy);
+        HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_GetDisplay created dpy: %p", dpy);
         HYBRIS_EGL_TRACE("Created EGL display: %p", dpy);
     } else {
         HiLogPrint(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, "ohosws_GetDisplay: Invalid display parameter");
@@ -129,7 +129,7 @@ extern "C" void ohosws_releaseDisplay(_EGLDisplay *dpy)
 
 extern "C" EGLNativeWindowType ohosws_CreateWindow(EGLNativeWindowType win, _EGLDisplay *display)
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_CreateWindow enter: win=%p display=%p", (void*)win, display);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_CreateWindow enter: win=%p display=%p", (void*)win, display);
     HYBRIS_EGL_TRACE("ohosws_CreateWindow(win=%p, display=%p)", (void*)win, display);
     
     // If win is null, we can't create a window
@@ -158,14 +158,14 @@ extern "C" EGLNativeWindowType ohosws_CreateWindow(EGLNativeWindowType win, _EGL
         _nativewindows.push_back(window);
     }
     
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_CreateWindow exit: window=%p", window);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_CreateWindow exit: window=%p", window);
     HYBRIS_EGL_TRACE("Created OpenHarmony window: %p", window);
     return reinterpret_cast<EGLNativeWindowType>(static_cast<struct ANativeWindow *>(window));
 }
 
 extern "C" void ohosws_DestroyWindow(EGLNativeWindowType win)
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_DestroyWindow enter: win=%p", (void*)win);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_DestroyWindow enter: win=%p", (void*)win);
     HYBRIS_EGL_TRACE("ohosws_DestroyWindow(win=%p)", (void*)win);
     
     if (!win) {
@@ -192,7 +192,7 @@ extern "C" void ohosws_DestroyWindow(EGLNativeWindowType win)
 
 extern "C" __eglMustCastToProperFunctionPointerType ohosws_eglGetProcAddress(const char *procname) 
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_eglGetProcAddress: %s", procname ? procname : "NULL");
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_eglGetProcAddress: %s", procname ? procname : "NULL");
     HYBRIS_EGL_TRACE("ohosws_eglGetProcAddress(procname=%s)", procname ? procname : "NULL");
     
     return eglplatformcommon_eglGetProcAddress(procname);
@@ -207,11 +207,11 @@ extern "C" void ohosws_passthroughImageKHR(EGLContext *ctx, EGLenum *target, EGL
 
 extern "C" const char *ohosws_eglQueryString(EGLDisplay dpy, EGLint name, const char *(*real_eglQueryString)(EGLDisplay dpy, EGLint name))
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_eglQueryString: dpy=%p name=%d", (void*)dpy, name);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_eglQueryString: dpy=%p name=%d", (void*)dpy, name);
     HYBRIS_EGL_TRACE("ohosws_eglQueryString(dpy=%p, name=%d)", dpy, name);
     
     const char *ret = eglplatformcommon_eglQueryString(dpy, name, real_eglQueryString);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_eglQueryString result: %s", ret ? ret : "NULL");
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_eglQueryString result: %s", ret ? ret : "NULL");
     return ret;
 }
 
@@ -252,7 +252,7 @@ extern "C" void ohosws_setSwapInterval(EGLDisplay dpy, EGLNativeWindowType win, 
 
 extern "C" void ohosws_eglInitialized(_EGLDisplay *dpy)
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "ohosws_eglInitialized: dpy=%p", dpy);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "ohosws_eglInitialized: dpy=%p", dpy);
     HYBRIS_EGL_TRACE("ohosws_eglInitialized(dpy=%p)", dpy);
 }
 

@@ -95,7 +95,7 @@ extern "C" ANativeWindowBuffer* ohosws_find_anwb_for_ohbuffer(void* ohBuf)
         std::lock_guard<std::mutex> lock(g_bufferLookupMutex);
         auto it = g_bufferLookup.find(ohBuf);
         if (it != g_bufferLookup.end()) {
-            HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+            HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                        "ohosws_find_anwb_for_ohbuffer: found cached wrapper %p for ohBuf %p",
                        it->second, ohBuf);
             return it->second;
@@ -112,7 +112,7 @@ extern "C" ANativeWindowBuffer* ohosws_find_anwb_for_ohbuffer(void* ohBuf)
      */
     OhosNativeWindowBuffer* wrapper = new OhosNativeWindowBuffer(
         static_cast<OHNativeWindowBuffer*>(ohBuf));
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                "ohosws_find_anwb_for_ohbuffer: created on-demand wrapper %p for ohBuf %p",
                wrapper, ohBuf);
     return wrapper;
@@ -125,7 +125,7 @@ static buffer_handle_t ImportNativeHandleFromBH(const BufferHandle& bh)
                   ? static_cast<int>(bh.reserveInts) - kPtrSlots
                   : 0;
 
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                "ImportNativeHandleFromBH: bh=%p fd=%d numFds=%d numInts=%d %dx%d",
                &bh, bh.fd, numFds, numInts, bh.width, bh.height);
 
@@ -153,7 +153,7 @@ static buffer_handle_t ImportNativeHandleFromBH(const BufferHandle& bh)
                    ret, bh.fd, bh.width, bh.height);
         return nullptr;
     }
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                "ImportNativeHandleFromBH: success, imported=%p", (void*)imported);
     return imported;
 }
@@ -164,7 +164,7 @@ OhosNativeWindowBuffer::OhosNativeWindowBuffer(OHNativeWindowBuffer* ohBuffer)
     : BaseNativeWindowBuffer()
     , m_ohBuffer(ohBuffer)
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "OhosNativeWindowBuffer constructor: ohBuffer=%p", ohBuffer);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "OhosNativeWindowBuffer constructor: ohBuffer=%p", ohBuffer);
     HYBRIS_EGL_TRACE("OhosNativeWindowBuffer(%p)", ohBuffer);
 
     NativeObjectReference(ohBuffer);
@@ -197,7 +197,7 @@ OhosNativeWindowBuffer::OhosNativeWindowBuffer(OHNativeWindowBuffer* ohBuffer)
 
 OhosNativeWindowBuffer::~OhosNativeWindowBuffer()
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                "~OhosNativeWindowBuffer: this=%p magic=0x%08x ohBuffer=%p importedHandle=%p",
                this, magic, m_ohBuffer, (void*)m_importedHandle);
 
@@ -210,7 +210,7 @@ OhosNativeWindowBuffer::~OhosNativeWindowBuffer()
 
     HYBRIS_EGL_TRACE("~OhosNativeWindowBuffer(%p)", m_ohBuffer);
     if (m_importedHandle) {
-        HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+        HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                    "~OhosNativeWindowBuffer: calling hybris_gralloc_release handle=%p", (void*)m_importedHandle);
         hybris_gralloc_release(m_importedHandle, 0);
         m_importedHandle = nullptr;
@@ -219,7 +219,7 @@ OhosNativeWindowBuffer::~OhosNativeWindowBuffer()
         NativeObjectUnreference(m_ohBuffer);
         m_ohBuffer = nullptr;
     }
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                "~OhosNativeWindowBuffer: done this=%p", this);
 }
 
@@ -236,7 +236,7 @@ OhosNativeWindow::OhosNativeWindow(NativeWindow *nativeWindow)
     , m_transform(0)
     , m_scalingMode(NATIVE_WINDOW_SCALING_MODE_FREEZE)
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "OhosNativeWindow constructor: nativeWindow=%p", nativeWindow);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "OhosNativeWindow constructor: nativeWindow=%p", nativeWindow);
     HYBRIS_EGL_TRACE("OhosNativeWindow::OhosNativeWindow(nativeWindow=%p)", nativeWindow);
 
     if (nativeWindow) {
@@ -252,7 +252,7 @@ OhosNativeWindow::OhosNativeWindow(NativeWindow *nativeWindow)
         if (NativeWindowHandleOpt(nativeWindow, GET_FORMAT, &format) == 0) {
             m_format = format;
         }
-        HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "OhosNativeWindow initial geometry: %dx%d format=%d", m_width, m_height, m_format);
+        HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "OhosNativeWindow initial geometry: %dx%d format=%d", m_width, m_height, m_format);
     }
 
     initializeDefaults();
@@ -260,7 +260,7 @@ OhosNativeWindow::OhosNativeWindow(NativeWindow *nativeWindow)
 
 OhosNativeWindow::~OhosNativeWindow()
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                "~OhosNativeWindow: this=%p mapSize=%zu", this, m_bufferMap.size());
     HYBRIS_EGL_TRACE("OhosNativeWindow::~OhosNativeWindow()");
 
@@ -270,13 +270,13 @@ OhosNativeWindow::~OhosNativeWindow()
         NativeObjectUnreference(m_nativeWindow);
         m_nativeWindow = nullptr;
     }
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                "~OhosNativeWindow: done this=%p", this);
 }
 
 void OhosNativeWindow::initializeDefaults()
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "initializeDefaults: %dx%d", m_width, m_height);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "initializeDefaults: %dx%d", m_width, m_height);
     m_crop = {0, 0, m_width, m_height};
     m_usage = GRALLOC_USAGE_HW_RENDER | GRALLOC_USAGE_HW_TEXTURE;
 }
@@ -288,7 +288,7 @@ void OhosNativeWindow::updateGeometry(int w, int h)
         m_width  = w;
         m_height = h;
         m_crop   = {0, 0, w, h};
-        HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+        HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                    "updateGeometry: late geometry resolved to %dx%d", w, h);
     }
 }
@@ -317,7 +317,7 @@ void OhosNativeWindow::resize(unsigned int width, unsigned int height)
         m_width = width;
         m_height = height;
         m_crop = {0, 0, (int32_t)width, (int32_t)height};
-        HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+        HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                    "resize: %dx%d (caller resize)", m_width, m_height);
         freeBuffers("resize"); /* drop cached wrappers; new ones created on next dequeue */
     }
@@ -332,7 +332,7 @@ void OhosNativeWindow::resize(unsigned int width, unsigned int height)
  */
 int OhosNativeWindow::dequeueBuffer(BaseNativeWindowBuffer** buffer, int* fenceFd)
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "dequeueBuffer enter: win=%p geometry=%dx%d", this, m_width, m_height);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "dequeueBuffer enter: win=%p geometry=%dx%d", this, m_width, m_height);
     HYBRIS_EGL_TRACE("OhosNativeWindow::dequeueBuffer()");
 
     if (!m_nativeWindow) {
@@ -361,7 +361,7 @@ int OhosNativeWindow::dequeueBuffer(BaseNativeWindowBuffer** buffer, int* fenceF
     auto it = m_bufferMap.find(ohBuffer);
     OhosNativeWindowBuffer* wrapper;
     if (it == m_bufferMap.end()) {
-        HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "New buffer encountered: %p", ohBuffer);
+        HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "New buffer encountered: %p", ohBuffer);
         wrapper = new OhosNativeWindowBuffer(ohBuffer);
         /* Some producers (ArkWeb) hand us a NativeWindow whose
          * GET_BUFFER_GEOMETRY property was never set (reads back the 1x1
@@ -400,7 +400,7 @@ int OhosNativeWindow::dequeueBuffer(BaseNativeWindowBuffer** buffer, int* fenceF
     *buffer = wrapper;
     *fenceFd = fence;
 
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "dequeueBuffer exit: wrapper=%p ohBuffer=%p fence=%d", wrapper, ohBuffer, fence);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "dequeueBuffer exit: wrapper=%p ohBuffer=%p fence=%d", wrapper, ohBuffer, fence);
     HYBRIS_EGL_TRACE("OhosNativeWindow::dequeueBuffer() = wrapper %p (ohBuffer %p) fence=%d",
           wrapper, ohBuffer, fence);
     return 0;
@@ -470,7 +470,7 @@ int OhosNativeWindow::cancelBuffer(BaseNativeWindowBuffer* buffer, int fenceFd)
 
 int OhosNativeWindow::query(int what, int* value) const
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "query what=%d (UNUSED by BaseNativeWindow)", what);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "query what=%d (UNUSED by BaseNativeWindow)", what);
     HYBRIS_EGL_TRACE("OhosNativeWindow::query(what=%d)", what);
 
     if (!value) {
@@ -486,23 +486,23 @@ int OhosNativeWindow::query(int what, int* value) const
             return 0;
         case NATIVE_WINDOW_FORMAT:
             *value = OhosFormatToAndroid(m_format);
-            HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "query FORMAT=%d", *value);
+            HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "query FORMAT=%d", *value);
             return 0;
         case NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS:
             *value = 1;
-            HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "query MIN_UNDEQUEUED_BUFFERS=%d", *value);
+            HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "query MIN_UNDEQUEUED_BUFFERS=%d", *value);
             return 0;
         case NATIVE_WINDOW_CONSUMER_USAGE_BITS:
             *value = 0;
-            HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "query CONSUMER_USAGE_BITS=%d", *value);
+            HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "query CONSUMER_USAGE_BITS=%d", *value);
             return 0;
         case NATIVE_WINDOW_TRANSFORM_HINT:
             *value = m_transform;
-            HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "query TRANSFORM_HINT=%d", *value);
+            HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "query TRANSFORM_HINT=%d", *value);
             return 0;
         case NATIVE_WINDOW_CONCRETE_TYPE:
             *value = NATIVE_WINDOW_TYPE_OHOS;
-            HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "query CONCRETE_TYPE=%d", *value);
+            HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "query CONCRETE_TYPE=%d", *value);
             return 0;
         case NATIVE_WINDOW_DEFAULT_WIDTH:
             *value = width();
@@ -520,7 +520,7 @@ int OhosNativeWindow::query(int what, int* value) const
 int OhosNativeWindow::perform(int operation, va_list args)
 {
     HYBRIS_EGL_TRACE("OhosNativeWindow::perform(operation=%d)", operation);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "perform op=%d (UNUSED by BaseNativeWindow)", operation);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "perform op=%d (UNUSED by BaseNativeWindow)", operation);
 
     switch (operation) {
         case NATIVE_WINDOW_SET_USAGE:
@@ -569,7 +569,7 @@ int OhosNativeWindow::perform(int operation, va_list args)
 int OhosNativeWindow::setUsage(uint64_t usage)
 {
     HYBRIS_EGL_TRACE("OhosNativeWindow::setUsage(usage=0x%" PRIx64 ")", usage);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "setUsage: 0x%" PRIx64, usage);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "setUsage: 0x%" PRIx64, usage);
 
     std::lock_guard<std::mutex> lock(m_mutex);
     m_usage = usage;
@@ -583,7 +583,7 @@ int OhosNativeWindow::setUsage(uint64_t usage)
 int OhosNativeWindow::setBufferCount(int bufferCount)
 {
     HYBRIS_EGL_TRACE("OhosNativeWindow::setBufferCount(bufferCount=%d)", bufferCount);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "setBufferCount: %d", bufferCount);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "setBufferCount: %d", bufferCount);
 
     if (bufferCount < 1) {
         HYBRIS_ERROR("Invalid buffer count: %d", bufferCount);
@@ -598,7 +598,7 @@ int OhosNativeWindow::setBufferCount(int bufferCount)
 int OhosNativeWindow::setBufferGeometry(int width, int height, int format)
 {
     HYBRIS_EGL_TRACE("OhosNativeWindow::setBufferGeometry(width=%d, height=%d, format=%d)", width, height, format);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "setBufferGeometry: %dx%d format=%d", width, height, format);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "setBufferGeometry: %dx%d format=%d", width, height, format);
 
     if (width <= 0 || height <= 0) {
         HYBRIS_ERROR("Invalid geometry: %dx%d", width, height);
@@ -616,7 +616,7 @@ int OhosNativeWindow::setBufferGeometry(int width, int height, int format)
 int OhosNativeWindow::setScalingMode(int mode)
 {
     HYBRIS_EGL_TRACE("OhosNativeWindow::setScalingMode(mode=%d)", mode);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "setScalingMode: %d", mode);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "setScalingMode: %d", mode);
     std::lock_guard<std::mutex> lock(m_mutex);
     m_scalingMode = mode;
     return 0;
@@ -625,7 +625,7 @@ int OhosNativeWindow::setScalingMode(int mode)
 int OhosNativeWindow::setTransform(int transform)
 {
     HYBRIS_EGL_TRACE("OhosNativeWindow::setTransform(transform=%d)", transform);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "setTransform: %d", transform);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "setTransform: %d", transform);
     std::lock_guard<std::mutex> lock(m_mutex);
     m_transform = transform;
     return 0;
@@ -634,7 +634,7 @@ int OhosNativeWindow::setTransform(int transform)
 int OhosNativeWindow::setCrop(android_native_rect_t const* rect)
 {
     HYBRIS_EGL_TRACE("OhosNativeWindow::setCrop(rect=%p)", rect);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "setCrop: %p", rect);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "setCrop: %p", rect);
 
     if (!rect) {
         HYBRIS_ERROR("Null crop rectangle");
@@ -648,7 +648,7 @@ int OhosNativeWindow::setCrop(android_native_rect_t const* rect)
 
 void OhosNativeWindow::freeBuffers(const char* caller)
 {
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                "freeBuffers[%s]: win=%p mapSize=%zu", caller ? caller : "?", this, m_bufferMap.size());
     /* Release map-ownership references. Each wrapper was incRef'd when inserted
      * into the map (see dequeueBuffer). Using decRef (not raw delete) ensures we
@@ -658,7 +658,7 @@ void OhosNativeWindow::freeBuffers(const char* caller)
      * still holds a ref decRef just decrements and Mali's eventual decRef deletes. */
     for (auto& kv : m_bufferMap) {
         OhosNativeWindowBuffer* wrapper = kv.second;
-        HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+        HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                    "freeBuffers: ohBuf=%p wrapper=%p magic=0x%08x handle=%p incRef=%p",
                    (void*)kv.first, (void*)wrapper,
                    wrapper ? wrapper->magic : 0,
@@ -675,7 +675,7 @@ void OhosNativeWindow::freeBuffers(const char* caller)
         }
     }
     m_bufferMap.clear();
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
                "freeBuffers[%s]: done win=%p", caller ? caller : "?", this);
 }
 
@@ -717,7 +717,7 @@ unsigned int OhosNativeWindow::width() const
             const_cast<OhosNativeWindow*>(this)->updateGeometry(w, h);
         }
     }
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "width() returns %d", m_width);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "width() returns %d", m_width);
     return m_width;
 }
 
@@ -729,7 +729,7 @@ unsigned int OhosNativeWindow::height() const
             const_cast<OhosNativeWindow*>(this)->updateGeometry(w, h);
         }
     }
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "height() returns %d", m_height);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "height() returns %d", m_height);
     return m_height;
 }
 
@@ -766,14 +766,14 @@ unsigned int OhosNativeWindow::getUsage() const
 int OhosNativeWindow::setBuffersFormat(int format)
 {
     HYBRIS_EGL_TRACE("OhosNativeWindow::setBuffersFormat(format=%d)", format);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "setBuffersFormat: %d", format);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "setBuffersFormat: %d", format);
     return setBufferGeometry(m_width, m_height, format);
 }
 
 int OhosNativeWindow::setBuffersDimensions(int width, int height)
 {
     HYBRIS_EGL_TRACE("OhosNativeWindow::setBuffersDimensions(width=%d, height=%d)", width, height);
-    HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "setBuffersDimensions: %dx%d", width, height);
+    HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, "setBuffersDimensions: %dx%d", width, height);
     return setBufferGeometry(width, height, m_format);
 }
 

@@ -89,7 +89,7 @@ void BaseNativeWindowBuffer::_decRef(struct android_native_base_t* base)
 
 	unsigned int oldcount = __sync_fetch_and_sub(&bnwb->refcount, 1);
 	TRACE("%p refcount = %i", bnwb, (int)oldcount - 1);
-	HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+	HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
 	           "_decRef: buf=%p refcount %u->%u", bnwb, oldcount, oldcount - 1);
 
 	if (oldcount == 1)
@@ -108,7 +108,7 @@ void BaseNativeWindowBuffer::_incRef(struct android_native_base_t* base)
 
 	unsigned int oldcount = __sync_fetch_and_add(&bnwb->refcount, 1);
 	TRACE("%p refcount = %i", bnwb, (int)oldcount + 1);
-	HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG,
+	HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG,
 	           "_incRef: buf=%p refcount %u->%u", bnwb, oldcount, oldcount + 1);
 }
 
