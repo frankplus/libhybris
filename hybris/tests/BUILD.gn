@@ -171,11 +171,63 @@ ohos_executable("test_dlopen") {
   subsystem_name = "thirdparty"
 }
 
+# test_hwcomposer - Full HWComposer2 display and GLES2 rendering test
+ohos_executable("test_hwcomposer") {
+  sources = [
+    "test_hwcomposer.cpp",
+    "test_common.cpp",
+  ]
+
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+
+  defines = [
+    "USE_HWCOMPOSER=1",
+    "HAS_HWCOMPOSER2_HEADERS=1",
+  ]
+
+  include_dirs = [
+    "../egl/platforms/hwcomposer",
+    "../egl/platforms/common",
+    "../libsync",
+    "../common",
+    "../platforms/common",
+    "../hwc2",
+    "//third_party/android-headers",
+  ]
+
+  deps = [
+    "../common:libhybris-common",
+    "../hardware:libhardware",
+    "../hwc2:libhwc2",
+    "../egl/platforms/hwcomposer:libhybris-hwcomposerwindow",
+    "../libsync:libsync",
+    "../glesv2:libGLESv2",
+  ]
+
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency ]
+  } else {
+    deps += [ libegl_dependency ]
+  }
+
+  install_images = [
+    "system",
+    "updater",
+  ]
+
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
 # Group target for all test programs
 group("tests") {
   deps = [
     ":test_egl",
     ":test_egl_configs",
     ":test_dlopen",
+    ":test_hwcomposer",
   ]
 }

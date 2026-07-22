@@ -1,0 +1,209 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("libhybris_args.gni")
+
+# Common configuration for all libhybris components
+config("libhybris_config") {
+  include_dirs = [
+    "hybris/include",
+    "hybris",
+    "hybris/include/hybris/common",
+    "hybris/common",
+    "hybris/egl",
+    "hybris/platforms/common",
+    "//third_party/android-headers",
+  ]
+  
+  defines = [
+    "DEFAULT_EGL_PLATFORM=\"$hybris_default_egl_platform\"",
+    "DEFAULT_HYBRIS_LD_LIBRARY_PATH=\"$hybris_default_ld_library_path\"",
+    "LINKER_PLUGIN_DIR=\"/lib64/libhybris/linker\"",
+    "HAVE_CONFIG_H",
+    "_GNU_SOURCE",
+  ]
+  
+  cflags = [
+    "-Wno-unused-parameter",
+    "-Wno-sign-compare",
+    "-Wno-missing-field-initializers",
+    "-Wno-unused-function",
+    "-Wno-implicit-function-declaration",
+    "-Wno-deprecated-declarations",
+    "-Wno-unused-value",
+    "-Wno-int-to-void-pointer-cast",
+    "-Wno-ignored-attributes",
+    "-Wno-gnu-statement-expression",
+    "-Wno-missing-braces",
+    "-Wno-unused-private-field",
+    "-Wno-unused-variable",
+    "-Wno-string-plus-int",
+  ]
+  
+  if (hybris_enable_debug) {
+    cflags += [
+      "-ggdb",
+      "-O0",
+    ]
+    defines += [ "DEBUG" ]
+  }
+  
+  if (hybris_enable_trace) {
+    defines += [ "TRACE" ]
+  }
+  
+  if (hybris_enable_experimental) {
+    defines += [ "EXPERIMENTAL" ]
+  }
+  
+  if (hybris_enable_adreno_quirks) {
+    defines += [ "WANT_ADRENO_QUIRKS" ]
+  }
+  
+  if (hybris_enable_mali_quirks) {
+    defines += [ "WANT_MALI_QUIRKS" ]
+  }
+  
+  if (hybris_enable_arm_tracing) {
+    defines += [ "WANT_ARM_TRACING" ]
+  }
+  
+  if (!hybris_enable_property_cache) {
+    defines += [ "NO_RUNTIME_PROPERTY_CACHE" ]
+  }
+  
+  # Architecture-specific defines
+  if (hybris_arch == "arm") {
+    defines += [ "WANT_ARCH_ARM" ]
+  } else if (hybris_arch == "arm64") {
+    defines += [ "WANT_ARCH_ARM64" ]
+  } else if (hybris_arch == "x86") {
+    defines += [ "WANT_ARCH_X86" ]
+  } else if (hybris_arch == "x86-64") {
+    defines += [ "WANT_ARCH_X86_64" ]
+  }
+  
+  # Android version conditionals
+  if (android_version_major >= 13) {
+    defines += [ "HAS_ANDROID_13_0_0" ]
+  }
+  if (android_version_major >= 12) {
+    defines += [ "HAS_ANDROID_12_0_0" ]
+  }
+  if (android_version_major >= 11) {
+    defines += [ "HAS_ANDROID_11_0_0" ]
+  }
+  if (android_version_major >= 10) {
+    defines += [ "HAS_ANDROID_10_0_0" ]
+  }
+  if (android_version_major >= 9) {
+    defines += [ "HAS_ANDROID_9_0_0" ]
+  }
+  if (android_version_major >= 8) {
+    defines += [ "HAS_ANDROID_8_0_0" ]
+  }
+  if (android_version_major >= 7) {
+    defines += [ "HAS_ANDROID_7_0_0" ]
+  }
+  if (android_version_major >= 6) {
+    defines += [ "HAS_ANDROID_6_0_0" ]
+  }
+  if (android_version_major >= 5) {
+    defines += [ "HAS_ANDROID_5_0_0" ]
+  }
+  if (android_version_major >= 4) {
+    if (android_version_minor >= 2) {
+      defines += [ "HAS_ANDROID_4_2_0" ]
+    }
+    if (android_version_minor >= 1) {
+      defines += [ "HAS_ANDROID_4_1_0" ]
+    }
+    if (android_version_patch >= 3) {
+      defines += [ "HAS_ANDROID_4_0_3" ]
+    }
+    defines += [ "HAS_ANDROID_4_0_0" ]
+  }
+  if (android_version_major >= 2 && android_version_minor >= 3) {
+    defines += [ "HAS_ANDROID_2_3_0" ]
+  }
+  
+  # Linker version defines based on Android version and architecture
+  if (hybris_arch != "arm64" && hybris_arch != "x86-64") {
+    defines += [ "WANT_LINKER_JB" ]
+  }
+  if (android_version_major >= 6) {
+    defines += [ "WANT_LINKER_MM" ]
+  }
+  if (android_version_major >= 7) {
+    defines += [ "WANT_LINKER_N" ]
+  }
+  if (android_version_major >= 8) {
+    defines += [ "WANT_LINKER_O" ]
+  }
+  if (android_version_major >= 10) {
+    defines += [ "WANT_LINKER_Q" ]
+  }
+}
+
+# Group target for all libhybris components
+group("libhybris") {
+  deps = [
+    "hybris/common:libhybris-common",
+    # "hybris/properties:libandroid-properties",
+    "hybris/hardware:libhardware",
+    "hybris/egl:libEGL",
+    "hybris/glesv1:libGLESv1_CM",
+    "hybris/glesv2:libGLESv2",
+    "hybris/egl/platforms:platforms",
+    # "hybris/platforms:libhybris-platformcommon",
+    # "hybris/camera:libcamera",
+    # "hybris/vibrator:libvibrator",
+    # "hybris/media:libmedia",
+    # "hybris/wifi:libwifi",
+    "hybris/gralloc:libgralloc",
+    # "hybris/ui:libui",
+    # "hybris/input:libis",
+    # "hybris/sf:libsf",
+    "hybris/hwc2:libhwc2",
+    # "hybris/libnfc_nxp:libnfc_nxp",
+    # "hybris/libnfc_ndef_nxp:libnfc_ndef_nxp",
+    # "hybris/opencl:libOpenCL",
+    # "hybris/vulkan:libvulkan",
+    "hybris/utils:getprop",
+    "hybris/utils:setprop",
+    "hybris/tests:tests",
+  ]
+  
+  # Conditionally add libsync for Android 4.2+
+  # if (android_version_major >= 4 && android_version_minor >= 2) {
+  #   deps += [ "hybris/libsync:libsync" ]
+  # }
+  
+  # Add Android version-specific linker modules
+  # if (hybris_arch != "arm64" && hybris_arch != "x86-64") {
+  #   deps += [ "hybris/common:jb" ]
+  # }
+  # if (android_version_major >= 6) {
+  #   deps += [ "hybris/common:mm" ]
+  # }
+  # if (android_version_major >= 7) {
+  #   deps += [ "hybris/common:n" ]
+  # }
+  # if (android_version_major >= 8) {
+  #   deps += [ "hybris/common:o" ]
+  # }
+  if (android_version_major >= 10) {
+    deps += [ "hybris/common:q" ]
+  }
+}

@@ -1,0 +1,48 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+
+# Build libhwc2 (Hardware Composer 2)
+ohos_shared_library("libhwc2") {
+  sources = [
+    "hwc2.c",
+  ]
+
+  configs = [ "../../:libhybris_config" ]
+
+  defines = [
+    "HAS_HWCOMPOSER2_HEADERS=1",
+    # RTLD_LAZY is normally from <dlfcn.h>, but the libhybris_config adds
+    # hybris/include/hybris/common to the include path, which causes
+    # #include <dlfcn.h> to resolve to the hybris custom dlfcn.h (no RTLD_LAZY).
+    "RTLD_LAZY=1",
+  ]
+
+  include_dirs = [
+    "../include",
+    "//third_party/android-headers",
+  ]
+
+  deps = [
+    "../common:libhybris-common",
+  ]
+
+  install_images = [
+    "system",
+    "updater",
+  ]
+
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}

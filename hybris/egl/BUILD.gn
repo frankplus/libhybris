@@ -1,0 +1,199 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("../../libhybris_args.gni")
+
+# Import platform builds (equivalent to SUBDIRS = platforms in Makefile.am)
+group("platforms") {
+  deps = [ "platforms:platforms" ]
+}
+
+# Action to generate GLVND dispatch stubs (if GLVND is enabled)
+if (hybris_enable_glvnd) {
+  action_foreach("generate_glvnd_stubs") {
+    script = "//third_party/python/python"
+    sources = [
+      "glvnd/generate/egl.xml",
+      "glvnd/generate/egl_other.xml", 
+      "glvnd/generate/egl_hybris.xml",
+    ]
+    
+    outputs = [
+      "$target_gen_dir/glvnd/g_egldispatchstubs.h",
+      "$target_gen_dir/glvnd/g_egldispatchstubs.c",
+    ]
+    
+    args = [
+      rebase_path("glvnd/generate/gen_egl_dispatch.py", root_build_dir),
+      "header",
+      rebase_path("glvnd/generate/egl.xml", root_build_dir),
+      rebase_path("glvnd/generate/egl_other.xml", root_build_dir),
+      rebase_path("glvnd/generate/egl_hybris.xml", root_build_dir),
+    ]
+    
+    public_deps = [ ":generate_glvnd_stubs" ]
+  }
+}
+
+# Configuration for Android 6.0 (MM) specific sources
+config("libhybris_mm_config") {
+  include_dirs = [
+    "../common/mm/bionic/libc/include",
+    "../common/mm/bionic/libc",
+  ]
+}
+
+# Configuration for Android 7.0 (N) specific sources  
+config("libhybris_n_config") {
+  include_dirs = [
+    "../common/n/bionic/libc/include",
+    "../common/n/bionic/libc",
+  ]
+}
+
+# Configuration for Android 8.0 (O) specific sources
+config("libhybris_o_config") {
+  include_dirs = [
+    "../common/o/bionic/libc/include", 
+    "../common/o/bionic/libc",
+  ]
+}
+
+# Configuration for Android 10.0 (Q) specific sources
+config("libhybris_q_config") {
+  include_dirs = [
+    "../common/q/bionic/libc/include",
+    "../common/q/bionic/libc",
+    "../common/q"
+  ]
+}
+
+# Build EGL library
+ohos_shared_library("libEGL") {
+  sources = [
+    "egl.c",
+    "helper.cpp",
+    "ws.c",
+  ]
+  
+  # Add GLVND sources if enabled
+  if (hybris_enable_glvnd) {
+    sources += [
+      "glvnd/eglglvnd.cpp",
+      "glvnd/egldispatchstubs.h",
+      "glvnd/egldispatchstubs.c",
+      "$target_gen_dir/glvnd/g_egldispatchstubs.h",
+      "$target_gen_dir/glvnd/g_egldispatchstubs.c",
+    ]
+  }
+
+  # Add Android version-specific bionic headers for dlfcn.h
+  configs = []
+  if (android_version_major >= 10) {
+    configs += [ ":libhybris_q_config" ]
+  } else if (android_version_major >= 8) {
+    configs += [ ":libhybris_o_config" ]
+  } else if (android_version_major >= 7) {
+    configs += [ ":libhybris_n_config" ]
+  } else if (android_version_major >= 6) {
+    configs += [ ":libhybris_mm_config" ]
+  }
+  
+  configs += [ "../../:libhybris_config" ]
+  
+  cflags = [
+    "-DPKGLIBDIR=\"/system/lib64/libhybris\"",
+    "-DDEFAULT_EGL_PLATFORM=\"${hybris_default_egl_platform}\"",
+  ]
+  
+  cflags_cc = [
+    "-DPKGLIBDIR=\"/system/lib64/libhybris\"",
+    "-DDEFAULT_EGL_PLATFORM=\"${hybris_default_egl_platform}\"",
+  ]
+  
+  # Add Mesa headers support if enabled
+  if (hybris_enable_mesa) {
+    cflags += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+    cflags_cc += [ "-DLIBHYBRIS_WANTS_MESA_X11_HEADERS" ]
+  }
+  
+  # Add GL_LIB_SUFFIX definition
+  if (hybris_enable_glvnd) {
+    cflags += [ "-DGL_LIB_SUFFIX=\"_libhybris\"" ]
+    cflags_cc += [ "-DGL_LIB_SUFFIX=\"_libhybris\"" ]
+  } else {
+    cflags += [ "-DGL_LIB_SUFFIX=\"\"" ]
+    cflags_cc += [ "-DGL_LIB_SUFFIX=\"\"" ]
+  }
+  
+  # Add GLVND-specific flags
+  if (hybris_enable_glvnd) {
+    include_dirs = [
+      "glvnd",
+      "$target_gen_dir/glvnd",
+    ]
+    cflags += [ "-fvisibility=hidden" ]
+    cflags_cc += [ "-fvisibility=hidden" ]
+  }
+  
+  deps = [
+    "../common:libhybris-common",
+    "../hardware:libhardware",
+    "platforms:libhybris-eglplatformcommon",
+    "../platforms:libhybris-platformcommon",
+  ]
+  
+  external_deps = [ "hilog:libhilog" ]
+  
+  # Add GLVND dependency if enabled
+  if (hybris_enable_glvnd) {
+    deps += [ ":generate_glvnd_stubs" ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+
+  # Provide libEGL_impl.so alias so the OHOS opengl_wrapper can dlopen() it.
+  symlink_target_name = [ "libEGL_impl.so" ]
+
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Process GLVND vendor configuration template (if GLVND is enabled)
+if (hybris_enable_glvnd) {
+  action("generate_glvnd_vendor_json") {
+    script = "//build/lite/run_shell_cmd.py"
+    inputs = [ "glvnd/10_libhybris.json.in" ]
+    outputs = [ "$target_gen_dir/10_libhybris.json" ]
+    
+    # Replace @GL_LIB_SUFFIX@ with _libhybris for GLVND builds
+    args = [
+      "sed",
+      "s/@GL_LIB_SUFFIX@/_libhybris/g",
+      rebase_path("glvnd/10_libhybris.json.in", root_build_dir),
+    ]
+    args += [ ">", rebase_path("$target_gen_dir/10_libhybris.json", root_build_dir) ]
+  }
+
+  ohos_prebuilt_etc("libhybris_glvnd_vendor") {
+    source = "$target_gen_dir/10_libhybris.json"
+    relative_install_dir = "glvnd/egl_vendor.d"
+    deps = [ ":generate_glvnd_vendor_json" ]
+    part_name = "libhybris"
+    subsystem_name = "thirdparty"
+  }
+}

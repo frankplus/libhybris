@@ -37,10 +37,14 @@ ohos_shared_library("eglplatform_ohos") {
   cflags = [
     "-DPLATFORM_OHOS",
     "-DNATIVE_WINDOW_TYPE_OHOS=4",
+    "-Wno-string-plus-int",
+    "-DDEBUG",
   ]
   cflags_cc = [
     "-DPLATFORM_OHOS", 
     "-DNATIVE_WINDOW_TYPE_OHOS=4",
+    "-Wno-string-plus-int",
+    "-DDEBUG",
   ]
   
   if (hybris_enable_trace) {
@@ -60,6 +64,7 @@ ohos_shared_library("eglplatform_ohos") {
   
   external_deps = [
     "graphic_surface:surface",
+    "hilog:libhilog",
   ]
   
   # Module flags to match autotools behavior

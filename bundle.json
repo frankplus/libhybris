@@ -1,0 +1,38 @@
+{
+    "name": "@ohos/libhybris",
+    "description": "libhybris allows to use bionic-based HW adaptations in glibc systems",
+    "version": "3.0",
+    "license": "Apache-2.0 AND LGPL-2.1",
+    "publishAs": "code-segment",
+    "segment": {
+        "destPath": "third_party/libhybris"
+    },
+    "dirs": {},
+    "scripts": {},
+    "component": {
+        "name": "libhybris",
+        "subsystem": "thirdparty",
+        "syscap": [],
+        "features": [],
+        "adapted_system_type": [],
+        "rom": "",
+        "ram": "",
+        "deps": {
+            "components": [
+                "c_utils",
+                "graphic_surface",
+                "hilog"
+            ],
+            "third_party": []
+        },
+        "build": {
+            "sub_component": [
+                "//third_party/libhybris:libhybris",
+                "//third_party/libhybris/hybris/egl/platforms/ohos:eglplatform_ohos"
+            ],
+            "inner_kits": [
+            ],
+            "test": []
+        }
+    }
+}
