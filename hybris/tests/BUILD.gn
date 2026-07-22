@@ -1,0 +1,181 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("../../libhybris_args.gni")
+
+# Test configuration
+config("test_config") {
+  include_dirs = [
+    "../../hybris/include",
+    "../../hybris",
+    "//third_party/android-headers",
+  ]
+}
+
+# Variables to handle conditional EGL/GLES linking (matching Makefile.am behavior)
+if (hybris_enable_glvnd) {
+  # When GLVND is enabled, link with system EGL/GLES
+  libegl_dependency = "EGL"
+} else {
+  # Link with libhybris EGL/GLES
+  libegl_dependency = "../egl:libEGL"
+}
+
+# Configuration for Android 6.0 (MM) specific sources
+config("libhybris_mm_config") {
+  include_dirs = [
+    "../common/mm/bionic/libc/include",
+    "../common/mm/bionic/libc",
+  ]
+}
+
+# Configuration for Android 7.0 (N) specific sources  
+config("libhybris_n_config") {
+  include_dirs = [
+    "../common/n/bionic/libc/include",
+    "../common/n/bionic/libc",
+  ]
+}
+
+# Configuration for Android 8.0 (O) specific sources
+config("libhybris_o_config") {
+  include_dirs = [
+    "../common/o/bionic/libc/include", 
+    "../common/o/bionic/libc",
+  ]
+}
+
+# Configuration for Android 10.0 (Q) specific sources
+config("libhybris_q_config") {
+  include_dirs = [
+    "../common/q/bionic/libc/include",
+    "../common/q/bionic/libc",
+    "../common/q"
+  ]
+}
+
+# test_egl - Basic EGL test
+ohos_executable("test_egl") {
+  sources = [
+    "test_egl.cpp",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  include_dirs = [
+    "../egl/platforms/common",
+    "../egl/platforms/hwcomposer",
+    "../libsync",
+    "../common",
+    "../platforms/common",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+  ]
+  
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency ]
+  } else {
+    deps += [ libegl_dependency ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_egl_configs - EGL configuration test
+ohos_executable("test_egl_configs") {
+  sources = [
+    "test_egl_configs.c",
+  ]
+  
+  configs = [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+  ]
+  
+  # Link with EGL library
+  if (hybris_enable_glvnd) {
+    external_deps = [ libegl_dependency ]
+  } else {
+    deps += [ libegl_dependency ]
+  }
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# test_dlopen - Dynamic library loading test
+ohos_executable("test_dlopen") {
+  sources = [
+    "test_dlopen.c",
+  ]
+
+  # Add Android version-specific bionic headers for dlfcn.h
+  configs = []
+  if (android_version_major >= 10) {
+    configs += [ ":libhybris_q_config" ]
+  } else if (android_version_major >= 8) {
+    configs += [ ":libhybris_o_config" ]
+  } else if (android_version_major >= 7) {
+    configs += [ ":libhybris_n_config" ]
+  } else if (android_version_major >= 6) {
+    configs += [ ":libhybris_mm_config" ]
+  }
+  
+  configs += [
+    "../../:libhybris_config",
+    ":test_config",
+  ]
+  
+  deps = [
+    "../common:libhybris-common",
+    "../hardware:libhardware",
+  ]
+  
+  install_images = [
+    "system",
+    "updater",
+  ]
+  
+  part_name = "libhybris"
+  subsystem_name = "thirdparty"
+}
+
+# Group target for all test programs
+group("tests") {
+  deps = [
+    ":test_egl",
+    ":test_egl_configs",
+    ":test_dlopen",
+  ]
+}
