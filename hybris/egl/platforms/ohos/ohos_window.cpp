@@ -363,6 +363,26 @@ int OhosNativeWindow::dequeueBuffer(BaseNativeWindowBuffer** buffer, int* fenceF
     if (it == m_bufferMap.end()) {
         HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, "New buffer encountered: %p", ohBuffer);
         wrapper = new OhosNativeWindowBuffer(ohBuffer);
+        /* Some producers (ArkWeb) hand us a NativeWindow whose
+         * GET_BUFFER_GEOMETRY property was never set (reads back the 1x1
+         * default) while the buffer pool is allocated at the real surface
+         * size.  Reporting the phantom 1x1 through width()/height() poisons
+         * Mali's surface state (EGL_WIDTH/EGL_HEIGHT/buffer-age bookkeeping)
+         * and breaks Chromium's partial redraw — stale frames flicker on
+         * screen.  Only in that degenerate case, trust the actual
+         * BufferHandle dimensions.  (Never second-guess a real geometry the
+         * client set explicitly — render_service intentionally runs with
+         * window geometry transposed relative to its pre-rotated buffers.) */
+        if (m_width <= 1 && m_height <= 1 &&
+            wrapper->ANativeWindowBuffer::width > 1 && wrapper->ANativeWindowBuffer::height > 1) {
+            HiLogPrint(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG,
+                       "dequeueBuffer: window geometry %dx%d != buffer %dx%d — adopting buffer size",
+                       m_width, m_height,
+                       wrapper->ANativeWindowBuffer::width, wrapper->ANativeWindowBuffer::height);
+            m_width  = wrapper->ANativeWindowBuffer::width;
+            m_height = wrapper->ANativeWindowBuffer::height;
+            m_crop   = {0, 0, m_width, m_height};
+        }
         /* Take map-ownership reference so Mali's permanent incRef can never drive
          * refcount to 0 while the wrapper is still in the map.
          * Matching decRef is in freeBuffers(). */
