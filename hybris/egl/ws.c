@@ -82,7 +82,7 @@ EGLBoolean ws_init(const char * egl_platform)
 	if (user_eglplatform_dir)
 		eglplatform_dir = user_eglplatform_dir;
 
-	snprintf(ws_lib_path, 2048, "%s/eglplatform_%s.so", eglplatform_dir, egl_platform);
+	snprintf(ws_lib_path, 2048, "%s/libeglplatform_%s.z.so", eglplatform_dir, egl_platform);
 
 	wsmod = (void *) dlopen(ws_lib_path, RTLD_LAZY);
 	if (wsmod==NULL)
